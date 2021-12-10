@@ -297,9 +297,9 @@ library Address {
      * _Available since v3.1._
      */
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -311,9 +311,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -355,8 +355,8 @@ library Address {
      * _Available since v3.3._
      */
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -383,8 +383,8 @@ library Address {
      * _Available since v3.3._
      */
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -395,8 +395,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -471,8 +471,8 @@ library SafeERC20 {
     }
 
     function safeDecreaseAllowance(
-        IERC20 token, 
-        address spender, 
+        IERC20 token,
+        address spender,
         uint256 value
     ) internal {
         uint256 newAllowance = token.allowance(address(this), spender)
@@ -503,9 +503,9 @@ interface IOwnable {
   function manager() external view returns (address);
 
   function renounceManagement() external;
-  
+
   function pushManagement( address newOwner_ ) external;
-  
+
   function pullManagement() external;
 }
 
@@ -541,7 +541,7 @@ contract Ownable is IOwnable {
         emit OwnershipPushed( _owner, newOwner_ );
         _newOwner = newOwner_;
     }
-    
+
     function pullManagement() public virtual override {
         require( msg.sender == _newOwner, "Ownable: must be new owner to pull");
         emit OwnershipPulled( _owner, _newOwner );
@@ -549,8 +549,8 @@ contract Ownable is IOwnable {
     }
 }
 
-interface IMemo {
-    function rebase( uint256 ohmProfit_, uint epoch_) external returns (uint256);
+interface ISSCR {
+    function rebase( uint256 scrProfit_, uint epoch_) external returns (uint256);
 
     function circulatingSupply() external view returns (uint256);
 
@@ -559,7 +559,7 @@ interface IMemo {
     function gonsForBalance( uint amount ) external view returns ( uint );
 
     function balanceForGons( uint gons ) external view returns ( uint );
-    
+
     function index() external view returns ( uint );
 }
 
@@ -571,14 +571,14 @@ interface IDistributor {
     function distribute() external returns ( bool );
 }
 
-contract TimeStaking is Ownable {
+contract SecureStaking is Ownable {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
     using SafeERC20 for IERC20;
 
-    address public immutable Time;
-    address public immutable Memories;
+    address public immutable SCR;
+    address public immutable sSCR;
 
     struct Epoch {
         uint number;
@@ -589,25 +589,25 @@ contract TimeStaking is Ownable {
     Epoch public epoch;
 
     address public distributor;
-    
+
     address public locker;
     uint public totalBonus;
-    
+
     address public warmupContract;
     uint public warmupPeriod;
-    
-    constructor ( 
-        address _Time, 
-        address _Memories, 
+
+    constructor (
+        address _SCR,
+        address _sSCR,
         uint32 _epochLength,
         uint _firstEpochNumber,
         uint32 _firstEpochTime
     ) {
-        require( _Time != address(0) );
-        Time = _Time;
-        require( _Memories != address(0) );
-        Memories = _Memories;
-        
+        require( _SCR != address(0) );
+        SCR = _SCR;
+        require( _sSCR != address(0) );
+        sSCR = _sSCR;
+
         epoch = Epoch({
             length: _epochLength,
             number: _firstEpochNumber,
@@ -625,50 +625,50 @@ contract TimeStaking is Ownable {
     mapping( address => Claim ) public warmupInfo;
 
     /**
-        @notice stake OHM to enter warmup
+        @notice stake SCR to enter warmup
         @param _amount uint
         @return bool
      */
     function stake( uint _amount, address _recipient ) external returns ( bool ) {
         rebase();
-        
-        IERC20( Time ).safeTransferFrom( msg.sender, address(this), _amount );
+
+        IERC20( SCR ).safeTransferFrom( msg.sender, address(this), _amount );
 
         Claim memory info = warmupInfo[ _recipient ];
         require( !info.lock, "Deposits for account are locked" );
 
         warmupInfo[ _recipient ] = Claim ({
             deposit: info.deposit.add( _amount ),
-            gons: info.gons.add( IMemo( Memories ).gonsForBalance( _amount ) ),
+            gons: info.gons.add( ISSCR( sSCR ).gonsForBalance( _amount ) ),
             expiry: epoch.number.add( warmupPeriod ),
             lock: false
         });
-        
-        IERC20( Memories ).safeTransfer( warmupContract, _amount );
+
+        IERC20( sSCR ).safeTransfer( warmupContract, _amount );
         return true;
     }
 
     /**
-        @notice retrieve sOHM from warmup
+        @notice retrieve sSCR from warmup
         @param _recipient address
      */
     function claim ( address _recipient ) public {
         Claim memory info = warmupInfo[ _recipient ];
         if ( epoch.number >= info.expiry && info.expiry != 0 ) {
             delete warmupInfo[ _recipient ];
-            IWarmup( warmupContract ).retrieve( _recipient, IMemo( Memories ).balanceForGons( info.gons ) );
+            IWarmup( warmupContract ).retrieve( _recipient, ISSCR( sSCR ).balanceForGons( info.gons ) );
         }
     }
 
     /**
-        @notice forfeit sOHM in warmup and retrieve OHM
+        @notice forfeit sSCR in warmup and retrieve SCR
      */
     function forfeit() external {
         Claim memory info = warmupInfo[ msg.sender ];
         delete warmupInfo[ msg.sender ];
 
-        IWarmup( warmupContract ).retrieve( address(this), IMemo( Memories ).balanceForGons( info.gons ) );
-        IERC20( Time ).safeTransfer( msg.sender, info.deposit );
+        IWarmup( warmupContract ).retrieve( address(this), ISSCR( sSCR ).balanceForGons( info.gons ) );
+        IERC20( SCR ).safeTransfer( msg.sender, info.deposit );
     }
 
     /**
@@ -679,7 +679,7 @@ contract TimeStaking is Ownable {
     }
 
     /**
-        @notice redeem sOHM for OHM
+        @notice redeem sSCR for SCR
         @param _amount uint
         @param _trigger bool
      */
@@ -687,16 +687,16 @@ contract TimeStaking is Ownable {
         if ( _trigger ) {
             rebase();
         }
-        IERC20( Memories ).safeTransferFrom( msg.sender, address(this), _amount );
-        IERC20( Time ).safeTransfer( msg.sender, _amount );
+        IERC20( sSCR ).safeTransferFrom( msg.sender, address(this), _amount );
+        IERC20( SCR ).safeTransfer( msg.sender, _amount );
     }
 
     /**
-        @notice returns the sOHM index, which tracks rebase growth
+        @notice returns the sSCR index, which tracks rebase growth
         @return uint
      */
     function index() public view returns ( uint ) {
-        return IMemo( Memories ).index();
+        return ISSCR( sSCR ).index();
     }
 
     /**
@@ -705,17 +705,17 @@ contract TimeStaking is Ownable {
     function rebase() public {
         if( epoch.endTime <= uint32(block.timestamp) ) {
 
-            IMemo( Memories ).rebase( epoch.distribute, epoch.number );
+            ISSCR( sSCR ).rebase( epoch.distribute, epoch.number );
 
             epoch.endTime = epoch.endTime.add32( epoch.length );
             epoch.number++;
-            
+
             if ( distributor != address(0) ) {
                 IDistributor( distributor ).distribute();
             }
 
             uint balance = contractBalance();
-            uint staked = IMemo( Memories ).circulatingSupply();
+            uint staked = ISSCR( sSCR ).circulatingSupply();
 
             if( balance <= staked ) {
                 epoch.distribute = 0;
@@ -726,11 +726,11 @@ contract TimeStaking is Ownable {
     }
 
     /**
-        @notice returns contract OHM holdings, including bonuses provided
+        @notice returns contract SCR holdings, including bonuses provided
         @return uint
      */
     function contractBalance() public view returns ( uint ) {
-        return IERC20( Time ).balanceOf( address(this) ).add( totalBonus );
+        return IERC20( SCR ).balanceOf( address(this) ).add( totalBonus );
     }
 
     /**
@@ -740,7 +740,7 @@ contract TimeStaking is Ownable {
     function giveLockBonus( uint _amount ) external {
         require( msg.sender == locker );
         totalBonus = totalBonus.add( _amount );
-        IERC20( Memories ).safeTransfer( locker, _amount );
+        IERC20( sSCR ).safeTransfer( locker, _amount );
     }
 
     /**
@@ -750,7 +750,7 @@ contract TimeStaking is Ownable {
     function returnLockBonus( uint _amount ) external {
         require( msg.sender == locker );
         totalBonus = totalBonus.sub( _amount );
-        IERC20( Memories ).safeTransferFrom( locker, address(this), _amount );
+        IERC20( sSCR ).safeTransferFrom( locker, address(this), _amount );
     }
 
     enum CONTRACTS { DISTRIBUTOR, WARMUP, LOCKER }
@@ -770,7 +770,7 @@ contract TimeStaking is Ownable {
             locker = _address;
         }
     }
-    
+
     /**
      * @notice set warmup period in epoch's numbers for new stakers
      * @param _warmupPeriod uint

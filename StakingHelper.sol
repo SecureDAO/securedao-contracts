@@ -82,18 +82,18 @@ interface IStaking {
 contract StakingHelper {
 
     address public immutable staking;
-    address public immutable Time;
+    address public immutable SCR;
 
-    constructor ( address _staking, address _Time ) {
+    constructor ( address _staking, address _SCR ) {
         require( _staking != address(0) );
         staking = _staking;
-        require( _Time != address(0) );
-        Time = _Time;
+        require( _SCR != address(0) );
+        SCR = _SCR;
     }
 
     function stake( uint _amount, address recipient ) external {
-        IERC20( Time ).transferFrom( msg.sender, address(this), _amount );
-        IERC20( Time ).approve( staking, _amount );
+        IERC20( SCR ).transferFrom( msg.sender, address(this), _amount );
+        IERC20( SCR ).approve( staking, _amount );
         IStaking( staking ).stake( _amount, recipient );
         IStaking( staking ).claim( recipient );
     }

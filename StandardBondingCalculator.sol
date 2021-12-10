@@ -259,17 +259,17 @@ interface IBondingCalculator {
   function valuation( address pair_, uint amount_ ) external view returns ( uint _value );
 }
 
-contract TimeBondingCalculator is IBondingCalculator {
+contract SecureBondingCalculator is IBondingCalculator {
 
     using FixedPoint for *;
     using SafeMath for uint;
     using SafeMath for uint112;
 
-    address public immutable Time;
+    address public immutable SCR;
 
-    constructor( address _Time ) {
-        require( _Time != address(0) );
-        Time = _Time;
+    constructor( address _SCR ) {
+        require( _SCR != address(0) );
+        SCR = _SCR;
     }
 
     function getKValue( address _pair ) public view returns( uint k_ ) {
@@ -296,11 +296,11 @@ contract TimeBondingCalculator is IBondingCalculator {
         ( uint reserve0, uint reserve1, ) = IUniswapV2Pair( _pair ).getReserves();
 
         uint reserve;
-        if ( IUniswapV2Pair( _pair ).token0() == Time ) {
+        if ( IUniswapV2Pair( _pair ).token0() == SCR ) {
             reserve = reserve1;
         } else {
             reserve = reserve0;
         }
-        return reserve.mul( 2 * ( 10 ** IERC20( Time ).decimals() ) ).div( getTotalValue( _pair ) );
+        return reserve.mul( 2 * ( 10 ** IERC20( SCR ).decimals() ) ).div( getTotalValue( _pair ) );
     }
 }

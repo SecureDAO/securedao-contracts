@@ -188,8 +188,8 @@ library Address {
     }
 
     function functionCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         return _functionCallWithValue(target, data, 0, errorMessage);
@@ -200,9 +200,9 @@ library Address {
     }
 
     function functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 value, 
+        address target,
+        bytes memory data,
+        uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
@@ -214,9 +214,9 @@ library Address {
     }
 
     function _functionCallWithValue(
-        address target, 
-        bytes memory data, 
-        uint256 weiValue, 
+        address target,
+        bytes memory data,
+        uint256 weiValue,
         string memory errorMessage
     ) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
@@ -246,8 +246,8 @@ library Address {
     }
 
     function functionStaticCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal view returns (bytes memory) {
         require(isContract(target), "Address: static call to non-contract");
@@ -262,8 +262,8 @@ library Address {
     }
 
     function functionDelegateCall(
-        address target, 
-        bytes memory data, 
+        address target,
+        bytes memory data,
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(isContract(target), "Address: delegate call to non-contract");
@@ -272,8 +272,8 @@ library Address {
     }
 
     function _verifyCallResult(
-        bool success, 
-        bytes memory returndata, 
+        bool success,
+        bytes memory returndata,
         string memory errorMessage
     ) private pure returns(bytes memory) {
         if (success) {
@@ -314,14 +314,14 @@ interface IPolicy {
     function policy() external view returns (address);
 
     function renouncePolicy() external;
-  
+
     function pushPolicy( address newPolicy_ ) external;
 
     function pullPolicy() external;
 }
 
 contract Policy is IPolicy {
-    
+
     address internal _policy;
     address internal _newPolicy;
 
@@ -366,76 +366,76 @@ contract Distributor is Policy {
     using SafeMath for uint;
     using SafeMath for uint32;
     using SafeERC20 for IERC20;
-    
-    
-    
+
+
+
     /* ====== VARIABLES ====== */
 
-    address public immutable OHM;
+    address public immutable SCR;
     address public immutable treasury;
-    
+
     uint32 public immutable epochLength;
     uint32 public nextEpochTime;
-    
+
     mapping( uint => Adjust ) public adjustments;
-    
-    
+
+
     /* ====== STRUCTS ====== */
-        
+
     struct Info {
         uint rate; // in ten-thousandths ( 5000 = 0.5% )
         address recipient;
     }
     Info[] public info;
-    
+
     struct Adjust {
         bool add;
         uint rate;
         uint target;
     }
-    
-    
-    
+
+
+
     /* ====== CONSTRUCTOR ====== */
 
-    constructor( address _treasury, address _ohm, uint32 _epochLength, uint32 _nextEpochTime ) {        
+    constructor( address _treasury, address _scr, uint32 _epochLength, uint32 _nextEpochTime ) {
         require( _treasury != address(0) );
         treasury = _treasury;
-        require( _ohm != address(0) );
-        OHM = _ohm;
+        require( _scr != address(0) );
+        SCR = _scr;
         epochLength = _epochLength;
         nextEpochTime = _nextEpochTime;
     }
-    
-    
-    
+
+
+
     /* ====== PUBLIC FUNCTIONS ====== */
-    
+
     /**
         @notice send epoch reward to staking contract
      */
     function distribute() external returns ( bool ) {
         if ( nextEpochTime <= uint32(block.timestamp) ) {
             nextEpochTime = nextEpochTime.add32( epochLength ); // set next epoch time
-            
+
             // distribute rewards to each recipient
             for ( uint i = 0; i < info.length; i++ ) {
                 if ( info[ i ].rate > 0 ) {
                     ITreasury( treasury ).mintRewards( // mint and send from treasury
-                        info[ i ].recipient, 
-                        nextRewardAt( info[ i ].rate ) 
+                        info[ i ].recipient,
+                        nextRewardAt( info[ i ].rate )
                     );
                     adjust( i ); // check for adjustment
                 }
             }
             return true;
-        } else { 
-            return false; 
+        } else {
+            return false;
         }
     }
-    
-    
-    
+
+
+
     /* ====== INTERNAL FUNCTIONS ====== */
 
     /**
@@ -457,9 +457,9 @@ contract Distributor is Policy {
             }
         }
     }
-    
-    
-    
+
+
+
     /* ====== VIEW FUNCTIONS ====== */
 
     /**
@@ -468,7 +468,7 @@ contract Distributor is Policy {
         @return uint
      */
     function nextRewardAt( uint _rate ) public view returns ( uint ) {
-        return IERC20( OHM ).totalSupply().mul( _rate ).div( 1000000 );
+        return IERC20( SCR ).totalSupply().mul( _rate ).div( 1000000 );
     }
 
     /**
@@ -485,9 +485,9 @@ contract Distributor is Policy {
         }
         return reward;
     }
-    
-    
-    
+
+
+
     /* ====== POLICY FUNCTIONS ====== */
 
     /**
