@@ -195,7 +195,7 @@ async function deployContracts(config, dai) {
     ).deploy();
 
     // Deploy staking warmpup
-    const stakingWarmup = await new StakingWarmpupDeployer(deployer, staking, scr).deploy();
+    const stakingWarmup = await new StakingWarmpupDeployer(deployer, staking, sscr).deploy();
 
     // Deploy staking helper
     const stakingHelper = await new StakingHelperDeployer(deployer, staking, scr).deploy();

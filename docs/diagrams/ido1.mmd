@@ -1,0 +1,19 @@
+graph TD;
+    1[Contract deployed]
+    1-->2[IDO initialized];
+    2-->3[Whitelist sale starts];
+    3-->4[Purchase];
+    4-->5[Public sale starts];
+    5-->4;
+    4-->7[All SCR sold or Public sale over];
+    7-->8[Close IDO];
+    9[IDO closed];
+    9-->10[Finalizer withdraws funds and deposits SCR];
+    10-->11[Sale finalized];
+    11-->12[Buyer Claims];
+    12-->13[SCR staked];
+    14[Cancel IDO]
+    14-->15[Purchase Disabled];
+    15-->16[Users withdraw];
+    classDef node font-size:14px;
+    classDef edgePath stroke-width:2px,stroke:green

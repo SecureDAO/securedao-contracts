@@ -1,0 +1,5 @@
+{
+    "disable_color": false,
+    "filter_paths": "node_modules/|contracts/mocks/|contracts/Treasury.sol|contracts/StandardBondingCalculator.sol|contracts/BondDepository.sol|contracts/SecureERC20.sol|contracts/StakedSecureERC20.sol|contracts/Staking.sol|contracts/StakingDistributor.sol|contracts/StakingHelper.sol|contracts/StakingWarmup.sol"
+}
+
