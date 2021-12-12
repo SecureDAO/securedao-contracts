@@ -32,6 +32,10 @@ The after deploy the contract addresses can be found here.
 |DAO            ||
 |Staking Warm Up||
 
+## IDO
+
+[IDO information](./docs/ido.md)
+
 ## Additional Documentaion
 
 More information about the protocol can be found at https://securedao.gitbook.io/securedao-docs.
