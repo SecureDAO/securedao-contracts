@@ -35,6 +35,7 @@ describe("IDO", function () {
     const initialSCR = gwei.mul(1000);
     const initialPrice = 100;
     const initialIndex = gwei;
+    const publicSaleSeconds = 24 * 3600;
 
     let
       deployer,
@@ -59,7 +60,7 @@ describe("IDO", function () {
   beforeEach(async function () {
     [deployer, team, buyer, buyer2, finalizer] = await ethers.getSigners();
 
-    firstEpochTimeUnixSeconds = Math.round(Date.now() / 1000) + 1800;;
+    firstEpochTimeUnixSeconds = Math.round(Date.now() / 1000) + 1000000000;;
     // Deploy DAI
     const DAI = await ethers.getContractFactory('DAI');
     dai = await DAI.deploy( 0 );
@@ -116,7 +117,6 @@ describe("IDO", function () {
       salePrice,
       startOfSale,
       publicSaleAlloc,
-      100,
     ]
     const deploymentData = IDO.interface.encodeDeploy(args)
     const estimatedGas = await ethers.provider.estimateGas({ data: deploymentData });
@@ -128,14 +128,14 @@ describe("IDO", function () {
 
   describe('interactions', async function() {
     let ido;
-
     beforeEach(async function() {
 
       const IDO = await ethers.getContractFactory('IDO');
       const totalNativeForSale = gwei.mul(1000);
       const salePrice = eth.mul(100);
 
-      const startOfSale = '1';
+      startOfSale = (await ethers.provider.getBlock("latest")).timestamp + 3600;
+
       const publicSaleAlloc = gwei.mul(200);
       const args = [
         dai.address,
@@ -145,7 +145,6 @@ describe("IDO", function () {
         salePrice,
         startOfSale,
         publicSaleAlloc,
-        100,
       ]
       ido = await IDO.deploy(...args);
       await ido.deployed();
@@ -166,16 +165,30 @@ describe("IDO", function () {
         })
 
         it("Cannot close the sale early", async function() {
-          await ido.deployed();
+          await expect(ido.initialize()).to.revertedWith("Cannot start sale yet");
+          await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+          await network.provider.send("evm_mine")
+          await ido.initialize().then(tx=>tx.wait());
+
+          await expect(ido.connect(caller).disableWhiteList())
+            .to.be.revertedWith('Cannot start public sale yet');
+          await expect(ido.connect(caller).closeSale())
+            .to.be.revertedWith('Public sale not started');
+
+          await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+          await network.provider.send("evm_mine")
+          await ido.disableWhiteList().then(tx=>tx.wait())
 
           await expect(ido.connect(caller).closeSale())
-            .to.be.revertedWith('Need all native to be sold');
+            .to.be.revertedWith('Sale not finished yet');
         })
       })
 
       describe("the sale has started with multiple whitelisters", async function() {
         beforeEach(async function() {
           await ido.whiteListBuyers([buyer.address, team.address]).then(tx=>tx.wait());
+          await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+          await network.provider.send("evm_mine")
           await ido.initialize();
         })
 
@@ -216,6 +229,9 @@ describe("IDO", function () {
 
               const purchaseAmt = totalAmt.mul(await ido.salePrice()).div(gwei).div(8);
               await ido.connect(buyer).purchase(purchaseAmt).then(tx=>tx.wait());
+
+              await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+              await network.provider.send("evm_mine")
 
               await ido.disableWhiteList().then(tx=>tx.wait());
             })
@@ -269,19 +285,20 @@ describe("IDO", function () {
               await expect(ido.connect(buyer2).claim())
                 .to.be.revertedWith('Can only claim after IDO has been finalized');
             })
-            // After sale has been finalized
+
             describe("the sale has been closed", async function() {
               beforeEach(async function() {
+                await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+                await network.provider.send("evm_mine")
+                await ido.disableWhiteList().then(tx=>tx.wait())
                 await ido.deployed();
+                await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+                await network.provider.send("evm_mine")
 
-                for (let i = 0; i < 110; i++) {
-                  await network.provider.send("evm_mine");
-                }
                 await ido.connect(finalizer).closeSale().then(tx=>tx.wait());
               })
 
               it("buyers cannot claim early", async function() {
-
                 await expect(ido.connect(buyer2).claim())
                   .to.be.revertedWith('Can only claim after IDO has been finalized');
               })
@@ -300,7 +317,7 @@ describe("IDO", function () {
                     .to.revertedWith("Did not receive the correct number of native tokens");
               })
 
-              describe("the sale is finalzied", async function() {
+              describe("the sale is finalized", async function() {
                 beforeEach(async function() {
                   await ido.deployed();
                   await scr.setVault(deployer.address).then(tx=>tx.wait());
@@ -362,6 +379,8 @@ describe("IDO", function () {
         describe("the caller is the only whitelisted address", async function () {
           beforeEach(async function() {
             await ido.whiteListBuyers([buyer.address]).then(tx=>tx.wait());
+            await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+            await network.provider.send("evm_mine")
             await ido.initialize();
 
             caller = buyer;
@@ -384,6 +403,8 @@ describe("IDO", function () {
         describe("the caller is non priviledged but is whitelisted", async function () {
           beforeEach(async function() {
             await ido.whiteListBuyers([buyer.address, buyer2.address]).then(tx=>tx.wait());
+            await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+            await network.provider.send("evm_mine")
             await ido.initialize();
             caller = buyer;
             await dai.mint(caller.address, eth.mul(1e6)).then(tx=>tx.wait());
@@ -436,10 +457,12 @@ describe("IDO", function () {
           beforeEach(async function() {
             caller = finalizer;
             await ido.whiteListBuyers([buyer.address, buyer2.address]).then(tx=>tx.wait());
+            await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+            await network.provider.send("evm_mine")
             await ido.initialize();
           })
 
-          describe("all tokens have been sold", async function() {
+          describe("the sale is over", async function() {
             beforeEach(async function() {
               const totalAmt = await ido.totalAmount();
 
@@ -449,6 +472,13 @@ describe("IDO", function () {
                 await dai.connect(b).approve(ido.address, largeApproval).then(tx=>tx.wait());
                 await ido.connect(b).purchase(purchaseAmount).then(tx=>tx.wait());
               }
+
+              await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+              await network.provider.send("evm_mine")
+
+              await ido.disableWhiteList().then(tx=>tx.wait())
+              await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+              await network.provider.send("evm_mine")
             })
 
             it("Can close the sale", async function() {
@@ -460,7 +490,11 @@ describe("IDO", function () {
             describe("the sale has been closed", async function() {
               beforeEach(async function() {
                 await ido.deployed();
-
+                await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+                await network.provider.send("evm_mine")
+                await ido.disableWhiteList().then(tx=>tx.wait())
+                await network.provider.send("evm_increaseTime", [publicSaleSeconds])
+                await network.provider.send("evm_mine")
                 await ido.connect(caller).closeSale().then(tx=>tx.wait());
               })
 
@@ -507,7 +541,8 @@ describe("IDO", function () {
 
       it("Can disable the whitelist", async function () {
         await ido.deployed();
-
+        await network.provider.send("evm_setNextBlockTimestamp", [startOfSale + publicSaleSeconds])
+        await network.provider.send("evm_mine")
         await ido.connect(caller).disableWhiteList().then(tx=>tx.wait());
       })
 
@@ -515,12 +550,6 @@ describe("IDO", function () {
         await ido.deployed();
 
         await ido.connect(caller).cancel().then(tx=>tx.wait());
-      })
-
-      it("Can initialize the sale", async function () {
-        await ido.deployed();
-
-        await ido.connect(caller).initialize().then(tx=>tx.wait());
       })
 
       it("Can set the finalizer", async function () {
@@ -542,6 +571,22 @@ describe("IDO", function () {
         caller = buyer;
       })
 
+      it("Can initialize the sale", async function () {
+        await ido.deployed();
+        await network.provider.send("evm_setNextBlockTimestamp", [startOfSale])
+        await network.provider.send("evm_mine")
+        await ido.connect(caller).initialize().then(tx=>tx.wait());
+      })
+
+      it("Can disable the whitelist", async function () {
+        await ido.deployed();
+
+        await network.provider.send("evm_setNextBlockTimestamp", [startOfSale + publicSaleSeconds])
+        await network.provider.send("evm_mine")
+        await ido.connect(caller).disableWhiteList().then(tx=>tx.wait());
+      })
+
+
       it("Cannot add addresses to the whitelist", async function () {
         await ido.deployed();
         const buyers = [buyer.address];
@@ -550,24 +595,10 @@ describe("IDO", function () {
           .to.be.revertedWith('Ownable: caller is not the owner');
       })
 
-      it("Cannot disable the whitelist", async function () {
-        await ido.deployed();
-
-        await expect(ido.connect(caller).disableWhiteList())
-          .to.be.revertedWith('Ownable: caller is not the owner');
-      })
-
       it("Cannot cancel the sale", async function () {
         await ido.deployed();
 
         await expect(ido.connect(caller).cancel())
-          .to.be.revertedWith('Ownable: caller is not the owner');
-      })
-
-      it("Cannot initialize the sale", async function () {
-        await ido.deployed();
-
-        await expect(ido.connect(caller).initialize())
           .to.be.revertedWith('Ownable: caller is not the owner');
       })
 

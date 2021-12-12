@@ -20,6 +20,7 @@ interface ITreasury {
     function pushManagement(address _newOwner) external;
     function pullManagement() external;
     function manager() external returns (address);
+    function SCR() external returns (address);
     function secondsNeededForQueue() external returns (uint32);
     function deposit(
         uint256 _amount,

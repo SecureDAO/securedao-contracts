@@ -290,7 +290,8 @@ async function bootstrap(dai, config, deployed) {
     let treasury = deployed.treasury;
     let stakingWarmup = deployed.stakingWarmup;
 
-  // Initialize SSCR and set the index
+    await scr.setVault(treasury.address).then(tx=>tx.wait())
+    // Initialize SSCR and set the index
     await sscr.connect(config.deployer).initialize(staking.address).then(tx => tx.wait());
     await sscr.setIndex(initialIndex).then(tx => tx.wait());
 
