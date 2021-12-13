@@ -17,28 +17,31 @@ contract IDO is IIDO, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    // Length of the private sale in seconds
+    uint256 constant public privateSaleSeconds = 1 days;
+    // Length of the public sale in seconds
+    uint256 constant public publicSaleSeconds = 1 days;
+
     // Assumes a reserve token with 18 decimals
-    address immutable public reserve;
+    address immutable public override reserve;
     address immutable public staking;
 
     // Amount (in wei) that can be purchased during the public sale
     uint256 immutable public publicSaleAmount;
     // Total amount of native tokens for purchase
-    uint256 immutable public totalAmount;
+    uint256 immutable public override totalAmount;
     // Reserve (in wei) per 1e9 native IE 100*1e18 is 100 reserve for 1 native
     uint256 immutable public override salePrice;
-    // Number of blocks for the public sale
-    uint256 immutable public publicSaleBlocks;
 
 
-    address public finalizer;
+    address public override finalizer;
     address public native;
 
-    // Start block of the sale
+    // Start time (in Unix epoch seconds) of the sale
     uint256 public startOfSale;
     // Block when the public sale was opened
     uint256 public startOfPublicSale;
-    uint256 public amountRemaining;
+    uint256 public override amountRemaining;
     // Total number of addresses in the whitelist
     uint256 public totalWhiteListed;
     uint256 public claimedAmount;
@@ -64,8 +67,7 @@ contract IDO is IIDO, Ownable {
         uint256 totalAmount_,
         uint256 salePrice_,
         uint256 startOfSale_,
-        uint256 publicSaleAmount_,
-        uint256 publicSaleBlocks_
+        uint256 publicSaleAmount_
     ) {
         require(reserve_ != address(0));
         require(staking_ != address(0));
@@ -79,33 +81,20 @@ contract IDO is IIDO, Ownable {
         salePrice = salePrice_;
         startOfSale = startOfSale_;
         publicSaleAmount = publicSaleAmount_;
-        publicSaleBlocks = publicSaleBlocks_;
     }
 
     // onlyOwner
 
     function setFinalizer(address finalizer_) external onlyOwner {
-      require(finalizer_ != address(0));
-      finalizer = finalizer_;
-    }
-
-    function initialize() external onlyOwner {
-        cancelled = false;
-        finalized = false;
-        initialized = true;
-        whiteListEnabled = true;
+        require(finalizer_ != address(0));
+        finalizer = finalizer_;
     }
 
     /// @dev Only Emergency Use
-    /// cancel the IDO and return the funds to all buyer
+    /// cancel the IDO and return the funds to all buyers
     function cancel() external onlyOwner {
         cancelled = true;
         startOfSale = 99999999999;
-    }
-
-    function disableWhiteList() external onlyOwner {
-        whiteListEnabled = false;
-        startOfPublicSale = block.number;
     }
 
     function whiteListBuyers(address[] memory buyers_)
@@ -128,6 +117,7 @@ contract IDO is IIDO, Ownable {
 
     function finalize(address native_) external override {
         require(msg.sender == finalizer, "Can only be called by the finalizer");
+
         require(native_ != address(0), "Native cannot be 0");
         require(saleClosed, "Sale must be closed");
         require(!finalized, "Already finalized");
@@ -138,21 +128,22 @@ contract IDO is IIDO, Ownable {
 
     function closeSale() external override {
         require(msg.sender == finalizer, "Can only be called by the approved caller");
+
         closeSaleRequirements();
         require(!saleClosed, "Sale already closed");
         saleClosed = true;
 
-        assert(IERC20(reserve).transfer(
-          msg.sender,
-          IERC20(reserve).balanceOf(address(this))
-        ));
+        IERC20(reserve).safeTransfer(
+            msg.sender,
+            IERC20(reserve).balanceOf(address(this))
+        );
     }
 
 
     // public or external view
 
     function saleStarted() public view returns (bool) {
-        return initialized && startOfSale <= block.number;
+        return initialized;
     }
 
     function getAllotmentPerBuyer() public view returns (uint256) {
@@ -172,6 +163,22 @@ contract IDO is IIDO, Ownable {
     }
 
     // public or external
+
+    // Start the private sale
+    function initialize() external {
+        require(block.timestamp >= startOfSale, "Cannot start sale yet");
+        cancelled = false;
+        finalized = false;
+        initialized = true;
+        whiteListEnabled = true;
+    }
+
+    // Start the public sale
+    function disableWhiteList() external {
+        require(block.timestamp >= (startOfSale + privateSaleSeconds), "Cannot start public sale yet");
+        whiteListEnabled = false;
+        startOfPublicSale = block.timestamp;
+    }
 
     function purchase(uint256 amount) external returns (bool) {
         require(saleStarted(), "Not started");
@@ -220,7 +227,7 @@ contract IDO is IIDO, Ownable {
         require(amount > 0, "Nothing to withdraw");
 
         purchasedAmounts[msg.sender] = 0;
-        assert(IERC20(reserve).transfer(msg.sender, (amount * salePrice) / 1e9));
+        IERC20(reserve).safeTransfer(msg.sender, (amount * salePrice) / 1e9);
     }
 
     // internal view
@@ -234,16 +241,15 @@ contract IDO is IIDO, Ownable {
     }
 
     function closeSaleRequirements() internal view {
-      if (block.number < startOfPublicSale + publicSaleBlocks) {
-        require(amountRemaining == 0, "Need all native to be sold");
-      }
+      require(startOfPublicSale > 0, "Public sale not started");
+      require(block.timestamp > (startOfPublicSale + publicSaleSeconds), "Sale not finished yet");
     }
 
     // internal
 
     function approveIfNeeded(address token, address spender, uint256 amount) internal {
-      if (IERC20(token).allowance(address(this), spender) < amount) {
-        assert(IERC20(token).approve(spender, amount));
-      }
+        if (IERC20(token).allowance(address(this), spender) < amount) {
+            assert(IERC20(token).approve(spender, amount));
+        }
     }
 }
