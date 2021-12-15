@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+pragma solidity 0.7.5;
+
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -26,33 +29,40 @@ contract Finalizer is Ownable {
   IFactory  immutable public factory;
   ITreasury immutable public treasury;
   IStaking  immutable public staking;
-  IIDO      immutable public ido;
+
+  IIDO      public ido;
 
   // team wallet address
   address immutable public team;
   address immutable public lpBondingCalculator;
 
+  bool public initialized;
   bool public finalized;
 
   uint256 public reserveRaised;
 
   constructor (
-    address ido_, address treasury_, address staking_,
+    address treasury_, address staking_,
     address team_, address factory_, address lpBondingCalculator_
   ) {
-    require(ido_ != address(0));
     require(treasury_ != address(0));
     require(staking_ != address(0));
     require(team_ != address(0));
     require(factory_ != address(0));
     require(lpBondingCalculator_ != address(0));
 
-    ido = IIDO(ido_);
     factory = IFactory(factory_);
     treasury = ITreasury(treasury_);
     staking = IStaking(staking_);
     team = team_;
     lpBondingCalculator = lpBondingCalculator_;
+  }
+
+  function setIDO(address ido_) external onlyOwner {
+    require(!initialized);
+    require(ido_ != address(0));
+    initialized = true;
+    ido = IIDO(ido_);
   }
 
   function finalize() external {

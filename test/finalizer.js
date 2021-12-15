@@ -81,20 +81,22 @@ describe("Finalizer", function () {
     await router.deployed();
 
     config = {
+      dao: deployer.address,
       firstEpochTimeUnixSeconds: firstEpochTimeUnixSeconds,
       firstEpochNumber: firstEpochNumber,
       epochLengthInSeconds: epochLengthInSeconds,
       initialRewardRate: initialRewardRate,
-      daiBondBCV: daiBondBCV,
       bondVestingLengthSeconds: bondVestingLengthSeconds,
-      minBondPrice: minBondPrice,
       maxBondPayout: maxBondPayout,
-      bondFee: bondFee,
-      maxBondDebt: maxBondDebt,
       initialBondDebt: initialBondDebt,
-      initialSCR: initialSCR,
-      initialPriceSCR: initialPrice,
       initialIndex: initialIndex,
+      bondFee: bondFee,
+      daiBondBCV: daiBondBCV,
+      lpBondBCV: daiBondBCV,
+      minBondPriceLP: minBondPrice,
+      minBondPriceReserve: minBondPrice,
+      maxBondDebtReserve: maxBondDebt,
+      maxBondDebtLP: maxBondDebt,
       deployer: deployer,
     }
 
@@ -113,6 +115,17 @@ describe("Finalizer", function () {
     let publicSaleSeconds = 24 * 3600;
 
     beforeEach(async function() {
+      const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
+
+      finalizer = await Finalizer.deploy(
+        deployed.treasury.address,
+        deployed.staking.address,
+        team.address,
+        factory.address,
+        deployed.olympusBondingCalculator.address
+      );
+      await finalizer.deployed()
+
       const IDO = await ethers.getContractFactory('IDO');
       totalNativeForSale = gwei.mul(1000);
       salePrice = eth.mul(100);
@@ -122,7 +135,7 @@ describe("Finalizer", function () {
       const args = [
         dai.address,
         deployed.staking.address,
-        deployer.address,
+        finalizer.address,
         totalNativeForSale,
         salePrice,
         startOfSale,
@@ -131,19 +144,8 @@ describe("Finalizer", function () {
       ido = await IDO.deploy(...args);
       await ido.deployed();
 
-      const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
 
-      finalizer = await Finalizer.deploy(
-        ido.address,
-        deployed.treasury.address,
-        deployed.staking.address,
-        team.address,
-        factory.address,
-        deployed.olympusBondingCalculator.address
-      );
-      await finalizer.deployed()
-
-      await ido.setFinalizer(finalizer.address).then(tx=>tx.wait());
+      await finalizer.setIDO(ido.address).then(tx=>tx.wait());
 
       await ido.whiteListBuyers([buyer.address, team.address]).then(tx=>tx.wait());
       await ido.initialize();

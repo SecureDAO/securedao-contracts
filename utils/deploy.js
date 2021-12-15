@@ -138,12 +138,13 @@ class BondingCalculatorDeployer {
 }
 
 class BondDepositoryDeployer {
-  constructor(deployer, liquid, treasury, principleAddress, calculatorAddress) {
+  constructor(deployer, liquid, treasury, principleAddress, calculatorAddress, dao) {
     this.deployer = deployer;
     this.liquid = liquid;
     this.treasury = treasury;
     this.principleAddress = principleAddress;
     this.calculatorAddress = calculatorAddress;
+    this.daoAddress = dao;
   }
 
   async deploy() {
@@ -156,7 +157,7 @@ class BondDepositoryDeployer {
       this.liquid.address,
       this.principleAddress,
       this.treasury.address,
-      this.deployer.address,
+      this.daoAddress,
       this.calculatorAddress
     );
     await bond.deployed();
@@ -235,6 +236,7 @@ async function deployContracts(config, dai) {
 module.exports.deployBonds = deployBonds;
 async function deployBonds(dai, scrDaiLPAddress, config, deployed) {
     let scr = deployed.scr;
+    let dao = config.dao;
     let deployer = config.deployer;
     let treasury = deployed.treasury;
     let olympusBondingCalculator = deployed.olympusBondingCalculator;
@@ -242,7 +244,7 @@ async function deployBonds(dai, scrDaiLPAddress, config, deployed) {
     // Ethereum 0 address, used when toggling changes in treasury
     const zeroAddress = '0x0000000000000000000000000000000000000000';
 
-    const daiBond = await new BondDepositoryDeployer(deployer, scr, treasury, dai.address, zeroAddress).deploy();
+    const daiBond = await new BondDepositoryDeployer(deployer, scr, treasury, dai.address, zeroAddress, dao).deploy();
 
     // Deploy LP bond
     const lpBond = await new BondDepositoryDeployer(
@@ -250,7 +252,8 @@ async function deployBonds(dai, scrDaiLPAddress, config, deployed) {
       scr,
       treasury,
       scrDaiLPAddress,
-      olympusBondingCalculator.address
+      olympusBondingCalculator.address,
+      dao
     ).deploy();
 
   return {
@@ -263,29 +266,15 @@ module.exports.bootstrap = bootstrap;
 async function bootstrap(dai, config, deployed) {
     // Ethereum 0 address, used when toggling changes in treasury
     const zeroAddress = '0x0000000000000000000000000000000000000000';
-    // DAI bond BCV
-    const daiBondBCV = config.daiBondBCV;
-    const bondVestingLengthSeconds = config.bondVestingLengthSeconds;
-    // Min bond price
-    const minBondPrice = config.minBondPrice;
-    // Max bond payout
-    const maxBondPayout = config.maxBondPayout;
-    // DAO fee for bond
-    const bondFee = config.bondFee;
-    // Max debt bond can take on
-    const maxBondDebt = config.maxBondDebt;
+
     // Initial Bond debt
-    const initialBondDebt = config.initialBondDebt;
     const initialIndex = config.initialIndex;
     // Initial reward rate for epoch
     const initialRewardRate = config.initialRewardRate;
 
-    let deployer = config.deployer;
-    let olympusBondingCalculator = deployed.olympusBondingCalculator;
     let scr = deployed.scr;
     let sscr = deployed.sscr;
     let staking = deployed.staking;
-    let stakingHelper = deployed.stakingHelper;
     let distributor = deployed.distributor;
     let treasury = deployed.treasury;
     let stakingWarmup = deployed.stakingWarmup;
@@ -314,40 +303,44 @@ async function bootstrapBonds(dai, scrDaiLPAddress, config, deployed, deployedBo
     const zeroAddress = '0x0000000000000000000000000000000000000000';
     // DAI bond BCV
     const daiBondBCV = config.daiBondBCV;
+    const lpBondBCV = config.lpBondBCV;
     const bondVestingLengthSeconds = config.bondVestingLengthSeconds;
     // Min bond price
-    const minBondPrice = config.minBondPrice;
+    const minBondPriceLP = config.minBondPriceLP;
+    const minBondPriceReserve = config.minBondPriceReserve;
     // Max bond payout
     const maxBondPayout = config.maxBondPayout;
     // DAO fee for bond
     const bondFee = config.bondFee;
     // Max debt bond can take on
-    const maxBondDebt = config.maxBondDebt;
+    const maxBondDebtReserve = config.maxBondDebtReserve;
+    const maxBondDebtLP = config.maxBondDebtLP;
     // Initial Bond debt
     const initialBondDebt = config.initialBondDebt;
-    const initialIndex = config.initialIndex;
-    // Initial reward rate for epoch
-    const initialRewardRate = config.initialRewardRate;
 
-    let deployer = config.deployer;
     let olympusBondingCalculator = deployed.olympusBondingCalculator;
     let lpBond = deployedBonds.lpBond;
     let daiBond = deployedBonds.daiBond;
-    let scr = deployed.scr;
-    let sscr = deployed.sscr;
     let staking = deployed.staking;
     let stakingHelper = deployed.stakingHelper;
-    let distributor = deployed.distributor;
     let treasury = deployed.treasury;
-    let stakingWarmup = deployed.stakingWarmup;
+
     // Set DAI bond terms
-    await daiBond.initializeBondTerms(daiBondBCV, minBondPrice, maxBondPayout, bondFee, maxBondDebt, initialBondDebt, bondVestingLengthSeconds).then(tx => tx.wait());
+    await daiBond.initializeBondTerms(
+      daiBondBCV, minBondPriceReserve,
+      maxBondPayout, bondFee, maxBondDebtReserve,
+      initialBondDebt, bondVestingLengthSeconds
+    ).then(tx => tx.wait());
 
     // Set staking for DAI bond
     await daiBond.setStaking(staking.address, stakingHelper.address).then(tx => tx.wait());
 
     // Set LP bond terms
-    await lpBond.initializeBondTerms(daiBondBCV, minBondPrice, maxBondPayout, bondFee, maxBondDebt, initialBondDebt, bondVestingLengthSeconds).then(tx => tx.wait());
+    await lpBond.initializeBondTerms(
+      lpBondBCV, minBondPriceLP, maxBondPayout,
+      bondFee, maxBondDebtLP, initialBondDebt,
+      bondVestingLengthSeconds
+    ).then(tx => tx.wait());
 
     // Set staking for DAI bond
     await lpBond.setStaking(staking.address, stakingHelper.address).then(tx => tx.wait());
