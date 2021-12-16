@@ -30,7 +30,8 @@ The after deploy the contract addresses can be found here.
 |SCR                    | 0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a |[ftmscan](https://ftmscan.com/address/0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a)|
 |sSCR                   | 0x27Eef8DC26A6747C54cB74e18665B0734d533a17 |[ftmscan](https://ftmscan.com/address/0x27Eef8DC26A6747C54cB74e18665B0734d533a17)|
 |Treasury               | 0xa39b5f217EdBDe068b4D3fA98256244ef74774a1 |[ftmscan](https://ftmscan.com/address/0xa39b5f217EdBDe068b4D3fA98256244ef74774a1)|
-|Staking                | 0xf9571592e60eD842470e3574D44665445156C77f |[ftmscan](https://ftmscan.com/address/0xf9571592e60eD842470e3574D44665445156C77f)|
+|Distributor            | 0xf9571592e60eD842470e3574D44665445156C77f |[ftmscan](https://ftmscan.com/address/0xf9571592e60eD842470e3574D44665445156C77f)|
+|Staking                | 0x3d97040e407078823891C59BB07eadb2dDF3AE32 |[ftmscan](https://ftmscan.com/address/0x3d97040e407078823891C59BB07eadb2dDF3AE32)|
 |StakingHelper          | 0xD6D001e3B84618cEEf7Ce85ea51c03B66c2caEB7 |[ftmscan](https://ftmscan.com/address/0xD6D001e3B84618cEEf7Ce85ea51c03B66c2caEB7)|
 |Staking Warm Up        | 0x544c670255D53D34163B87c10043bfa4e4d84F34 |[ftmscan](https://ftmscan.com/address/0x544c670255D53D34163B87c10043bfa4e4d84F34)|
 |MIM BondDepository     | 0x3972dc5D892aE4026416134bc251152067DB0665 |[ftmscan](https://ftmscan.com/address/0x3972dc5D892aE4026416134bc251152067DB0665)|

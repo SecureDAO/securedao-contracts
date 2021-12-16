@@ -10,7 +10,8 @@ const addresses = {
     scr: "0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a",
     staked_scr: "0x27Eef8DC26A6747C54cB74e18665B0734d533a17",
     treasury: "0xa39b5f217EdBDe068b4D3fA98256244ef74774a1",
-    staking: "0xf9571592e60eD842470e3574D44665445156C77f",
+    distributor: "0xf9571592e60eD842470e3574D44665445156C77f",
+    staking: "0x3d97040e407078823891C59BB07eadb2dDF3AE32",
     stakingHelper: "0xD6D001e3B84618cEEf7Ce85ea51c03B66c2caEB7",
     stakingWarmup: "0x544c670255D53D34163B87c10043bfa4e4d84F34",
     mimBond: "0x3972dc5D892aE4026416134bc251152067DB0665",
@@ -24,9 +25,10 @@ const contracts = {
     "0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157": null,
     "0xac4220abfd028f9c12b7916235180bbe73619b00": "Timelock",
     "0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a": "SecureERC20Token",
-    "0x27Eef8DC26A6747C54cB74e18665B0734d533a17": "StakedSecureERC20",
-    "0xa39b5f217EdBDe068b4D3fA98256244ef74774a1": "SecureStaking",
-    "0xf9571592e60eD842470e3574D44665445156C77f": "SecureStaking",
+    "0x27Eef8DC26A6747C54cB74e18665B0734d533a17": "sSCR",
+    "0xa39b5f217EdBDe068b4D3fA98256244ef74774a1": "SecureTreasury",
+    "0xf9571592e60eD842470e3574D44665445156C77f": "Distributor",
+    "0x3d97040e407078823891C59BB07eadb2dDF3AE32": "SecureStaking",
     "0xD6D001e3B84618cEEf7Ce85ea51c03B66c2caEB7": "StakingHelper",
     "0x544c670255D53D34163B87c10043bfa4e4d84F34": "StakingWarmup",
     "0x3972dc5D892aE4026416134bc251152067DB0665": "contracts/BondDepository.sol:SecureBondDepository",
@@ -36,7 +38,14 @@ const contracts = {
 }
 
 async function main() {
-  const txHashes = ['0xb53ac3e507a5576f30ee5593671f2d7eb7eff1ebe438e265af61972f2c5440e8'];
+  const txHashes = [
+    '0xb53ac3e507a5576f30ee5593671f2d7eb7eff1ebe438e265af61972f2c5440e8',
+    '0x01bc807ec9efa9b87440c5575148a2e20f1435fc9b68b3bcb1ed492b0657164b',
+    '0xefea850d8536094f7483e16b32c53cb608edbd58e20ddb94f5a38dea25229f83',
+    '0xad15cabcdd9dcac6061eadcf9cc76ce6352e625470400947a3163945de9d7ff3',
+    '0xdf768ad76bac4bc2f37c284413e299993186a0ce4ec3d18a726e6c2415beabf2',
+    '0x79e34b8453a1d2d39b66869c733d291bb6995b5ddb62ed054a55cb54703018a3',
+  ];
 
   const multisigAddr = addresses.multisig;
   const timelockAddr = addresses.timelock;
@@ -57,8 +66,13 @@ async function main() {
     console.log(txDesc.args);
     const timelockTxDesc = timelock.interface.parseTransaction({data: txDesc.args.data})
     console.log(timelockTxDesc);
+    const contractName = contracts[timelockTxDesc.args.target];
+    if (!contractName || contractName == "") {
+      console.log("couldn't find contract for tx ", txHash)
+      continue;
+    }
 
-    const Bond = await ethers.getContractFactory(contracts[timelockTxDesc.args.target])
+    const Bond = await ethers.getContractFactory(contractName)
     let bond = Bond.attach(timelockTxDesc.args.target)
     console.log(bond.interface.parseTransaction({data: timelockTxDesc.args.data}));
   }
