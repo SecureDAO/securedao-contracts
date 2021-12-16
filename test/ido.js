@@ -542,7 +542,7 @@ describe("IDO", function () {
 
       it("Can disable the whitelist", async function () {
         await ido.deployed();
-        await network.provider.send("evm_setNextBlockTimestamp", [startOfSale + publicSaleSeconds])
+        await network.provider.send("evm_increaseTime", [2*publicSaleSeconds])
         await network.provider.send("evm_mine")
         await ido.connect(caller).disableWhiteList().then(tx=>tx.wait());
       })

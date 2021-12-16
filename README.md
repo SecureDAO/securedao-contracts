@@ -26,15 +26,19 @@ The after deploy the contract addresses can be found here.
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
 |DAO (Multisig)         || 0x82BAB147F3F8afbA380eDBE1792a7a71e2c9cb88 ||
 |Team (Multisig)        || 0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157 ||
-|Timelock               ||
-|SCR                    ||
-|sSCR                   ||
-|Treasury               ||
-|Staking                ||
-|StakingHelper          ||
-|Staking Warm Up        ||
-|MIM BondDepository     ||
-|MIM-SCR BondDepository ||
+|Timelock               || 0xac4220abfd028f9c12b7916235180bbe73619b00 ||
+|SCR                    || 0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a ||
+|sSCR                   || 0x27Eef8DC26A6747C54cB74e18665B0734d533a17 ||
+|Treasury               || 0xa39b5f217EdBDe068b4D3fA98256244ef74774a1 ||
+|Staking                || 0xf9571592e60eD842470e3574D44665445156C77f ||
+|StakingHelper          || 0xD6D001e3B84618cEEf7Ce85ea51c03B66c2caEB7 ||
+|Staking Warm Up        || 0x544c670255D53D34163B87c10043bfa4e4d84F34 ||
+|MIM BondDepository     || 0x3972dc5D892aE4026416134bc251152067DB0665 ||
+|MIM-SCR BondDepository || 0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5 ||
+|IDO                    || 0xd641887848eB23b81B9DcAA3956448a6c717e842 ||
+|IDO Finalizer          || 0x3F29543F1E1C03146a6475b9CF8D2D419E7edd89 ||
+
+
 
 ## IDO
 

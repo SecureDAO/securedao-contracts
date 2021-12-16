@@ -1,4 +1,4 @@
-const { ethers, BigNumber } = require("hardhat");
+const { ethers } = require("hardhat");
 const fs = require('fs')
 const erc20ABI = fs.readFileSync('./abi/ERC20.json', 'utf8')
 const factoryABI = fs.readFileSync('./abi/UniswapV2Factory.json', 'utf8')
@@ -16,37 +16,38 @@ async function main() {
     const daoAddress = '0x82BAB147F3F8afbA380eDBE1792a7a71e2c9cb88';
     const team = '0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157';
     const MIMAddress = '0x82f0b8b456c1a451378467398982d4834b6829c1';
-    // TODO
-    const firstEpochDelay = 8*3600;
-    const startOfSale = '1639706400';
-    const team = teamAddress;
+    const timelockMinimum = 3600*12;
 
+    const firstEpochDelay = 8*3600;
+    const startOfSale = 1639717200;
+
+    // Bond vesting length in seconds (5 days)
+    const bondVestingLengthSeconds = 3600 * 24 * 5;
+    // How many seconds are in each epoch
+    const epochLengthInSeconds = 3600 * 8; // 8 hours
     // Time of first epoch
     const firstEpochTimeUnixSeconds = startOfSale + (3600*24*2) + firstEpochDelay;
+
     // What epoch will be first epoch
-    const firstEpochNumber = '1';
-    // How many blocks are in each epoch
-    const epochLengthInSeconds = 3600 * 8; // 8 hours
+    const firstEpochNumber = 1;
     // Initial reward rate for epoch
-    const initialRewardRate = 300; // 3%
+    const initialRewardRate = 30000; // 3%
     // MIM bond BCV
     const daiBondBCV = 873;
     // MIM-SCR bond BCV
     const lpBondBCV = 370;
-    // Bond vesting length in seconds (5 days)
-    const bondVestingLengthSeconds = 3600 * 24 * 5;
     // Min bond price
-    const minBondPriceReserve = '10200';
-    const minBondPriceLP = '1000'; // TODO
+    const minBondPriceReserve = 10200;
+    const minBondPriceLP = 820; // TODO
     // Max bond payout
-    const maxBondPayout = 41; // 0.41%
+    const maxBondPayout = 410; // 0.41%
     // DAO fee for bond
     const bondFee = 1000; // 10%
     // Max debt bond can take on
     const maxBondDebtLP = gwei.mul(80000);
     const maxBondDebtReserve = gwei.mul(30000);
     // Initial Bond debt
-    const initialBondDebt = '0'
+    const initialBondDebt = 0;
     const initialIndex = gwei;
 
     const totalNativeForSale = gwei.mul(2500);
@@ -81,6 +82,8 @@ async function main() {
 
     // Finish contract set up
     await deployed.scr.setVault(deployed.treasury.address).then(tx => tx.wait());
+
+    console.log("contracts deployed");
     await bootstrap(reserve, config, deployed);
 
     await factory.createPair(deployed.scr.address, reserve.address).then(tx => tx.wait());
@@ -90,6 +93,7 @@ async function main() {
 
     await bootstrapBonds(reserve, scrReserveLPAddress, config, deployed, deployedBonds);
 
+    console.log("contracts boostrapped");
     const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
     finalizer = await Finalizer.deploy(
       deployed.treasury.address,
@@ -115,9 +119,19 @@ async function main() {
 
     await finalizer.setIDO(ido.address).then(tx=>tx.wait());
 
-    const Timelock = ethers.getContractFactory("Timelock");
+    const Timelock = await ethers.getContractFactory("Timelock");
     const timelock = await Timelock.deploy(timelockMinimum, [daoAddress], [daoAddress])
     await timelock.deployed();
+
+    // Transfer ownership for everything except for the IDO (need to add whitelist)
+    console.log("transferring ownership");
+    await deployed.treasury.pushManagement(finalizer.address).then(tx=>tx.wait());
+    await finalizer.transferOwnership(timelock.address).then(tx=>tx.wait());
+    await deployed.staking.pushManagement(timelock.address).then(tx=>tx.wait());
+    await deployed.distributor.pushPolicy(timelock.address).then(tx=>tx.wait());
+    await deployed.sscr.pushManagement(timelock.address).then(tx=>tx.wait());
+    await deployedBonds.lpBond.pushManagement(timelock.address).then(tx=>tx.wait());
+    await deployedBonds.daiBond.pushManagement(timelock.address).then(tx=>tx.wait());
 
     const ADDRESSES = {
         DAO_ADDRESS: daoAddress,
@@ -144,8 +158,8 @@ async function main() {
       address: deployed.scr.address,
       constructorArguments: [],
     });
-    } catch {
-      console.log("couldn't verify SCR");
+    } catch (error) {
+      console.log("couldn't verify SCR", error);
     }
 
     try {
@@ -153,8 +167,8 @@ async function main() {
       address: deployed.sscr.address,
       constructorArguments: [],
     });
-    } catch {
-      console.log("couldn't verify sSCR");
+    } catch (error) {
+      console.log("couldn't verify sSCR", error);
     }
 
     try{
@@ -166,8 +180,8 @@ async function main() {
         0,
       ],
     });
-    } catch {
-      console.log("couldn't verify treasury");
+    } catch (error) {
+      console.log("couldn't verify treasury", error);
     }
 
     try {
@@ -182,7 +196,7 @@ async function main() {
       ],
     });
     } catch {
-      console.log("couldn't verify staking");
+      console.log("couldn't verify staking", error);
     }
 
     try {
@@ -193,8 +207,8 @@ async function main() {
         deployed.scr.address,
       ],
     });
-    } catch {
-      console.log("couldn't verify stakingWarmup");
+    } catch (error) {
+      console.log("couldn't verify stakingWarmup", error);
     }
 
     try {
@@ -205,8 +219,8 @@ async function main() {
         deployed.scr.address,
       ],
     });
-    } catch {
-      console.log("couldn't verify stakingHelper");
+    } catch (error) {
+      console.log("couldn't verify stakingHelper ", error);
     }
 
     try {
@@ -219,8 +233,8 @@ async function main() {
         firstEpochTimeUnixSeconds,
       ],
     });
-    } catch {
-      console.log("couldn't verify distributor");
+    } catch (error) {
+      console.log("couldn't verify distributor ", error);
     }
 
     try {
@@ -230,8 +244,8 @@ async function main() {
         deployed.scr.address,
       ],
     });
-    } catch {
-      console.log("couldn't verify bonding calculator");
+    } catch (error) {
+      console.log("couldn't verify bonding calculator ", error);
     }
 
     try {
@@ -245,8 +259,8 @@ async function main() {
         deployed.olympusBondingCalculator.address,
       ],
     });
-    } catch {
-      console.log("couldn't verify lp bond");
+    } catch (error) {
+      console.log("couldn't verify lp bond ", error);
     }
 
     try {
@@ -260,8 +274,8 @@ async function main() {
           zeroAddress,
         ],
       });
-    } catch {
-      console.log("couldn't verify mim bond");
+    } catch (error) {
+      console.log("couldn't verify mim bond ", error);
     }
 }
 

@@ -2,7 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 const fs = require('fs')
 
-const {apiKey, pk_path} = require('./secrets.json');
+const {etherscanAPIKey, pk_path} = require('./secrets.json');
 let pk = "";
 if (pk_path) {
   pk = fs.readFileSync(pk_path, 'utf8')
@@ -96,6 +96,6 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: apiKey,
+    apiKey: etherscanAPIKey,
   },
 };
