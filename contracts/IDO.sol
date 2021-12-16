@@ -39,6 +39,8 @@ contract IDO is IIDO, Ownable {
 
     // Start time (in Unix epoch seconds) of the sale
     uint256 public startOfSale;
+    // Block when the private sale was opened
+    uint256 public startOfPrivateSale;
     // Block when the public sale was opened
     uint256 public startOfPublicSale;
     uint256 public override amountRemaining;
@@ -164,11 +166,12 @@ contract IDO is IIDO, Ownable {
         finalized = false;
         initialized = true;
         whiteListEnabled = true;
+        startOfPrivateSale = block.timestamp;
     }
 
     // Start the public sale
     function disableWhiteList() external {
-        require(block.timestamp >= (startOfSale + privateSaleSeconds), "Cannot start public sale yet");
+        require(block.timestamp >= (startOfPrivateSale + privateSaleSeconds), "Cannot start public sale yet");
         whiteListEnabled = false;
         startOfPublicSale = block.timestamp;
     }

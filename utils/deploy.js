@@ -228,6 +228,7 @@ async function deployContracts(config, dai) {
       stakingWarmup: stakingWarmup,
       stakingHelper: stakingHelper,
       treasury: treasury,
+      distributor: distributor,
       treasuryWrapper: treasuryWrapper,
       distributor: distributor,
     };

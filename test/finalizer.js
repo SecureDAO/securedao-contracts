@@ -172,6 +172,8 @@ describe("Finalizer", function () {
           await dai.connect(b).approve(ido.address, largeApproval).then(tx=>tx.wait());
           await ido.connect(b).purchase(purchaseAmount).then(tx=>tx.wait());
         }
+        let startOfPrivateSale = await ido.startOfPrivateSale();
+        await network.provider.send("evm_setNextBlockTimestamp", [Number(startOfPrivateSale)+publicSaleSeconds])
         await ido.disableWhiteList().then(tx=>tx.wait());
 
         await bootstrap(dai, config, deployed);
