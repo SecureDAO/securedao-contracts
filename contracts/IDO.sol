@@ -11,6 +11,7 @@ import "./interfaces/ido.sol";
 
 interface IStaking {
     function stake(uint256 _amount, address _recipient) external returns (bool);
+    function claim(address _recipient) external;
 }
 
 contract IDO is IIDO, Ownable {
@@ -25,6 +26,7 @@ contract IDO is IIDO, Ownable {
     // Assumes a reserve token with 18 decimals
     address immutable public override reserve;
     address immutable public staking;
+    address immutable public override finalizer;
 
     // Amount (in wei) that can be purchased during the public sale
     uint256 immutable public publicSaleAmount;
@@ -33,8 +35,6 @@ contract IDO is IIDO, Ownable {
     // Reserve (in wei) per 1e9 native IE 100*1e18 is 100 reserve for 1 native
     uint256 immutable public override salePrice;
 
-
-    address public override finalizer;
     address public native;
 
     // Start time (in Unix epoch seconds) of the sale
@@ -52,7 +52,6 @@ contract IDO is IIDO, Ownable {
     bool public cancelled;
     bool public finalized;
     bool public saleClosed;
-
 
     mapping(address => bool) public bought;
     mapping(address => bool) public whiteListed;
@@ -83,16 +82,10 @@ contract IDO is IIDO, Ownable {
         publicSaleAmount = publicSaleAmount_;
     }
 
-    // onlyOwner
-
-    function setFinalizer(address finalizer_) external onlyOwner {
-        require(finalizer_ != address(0));
-        finalizer = finalizer_;
-    }
-
     /// @dev Only Emergency Use
     /// cancel the IDO and return the funds to all buyers
     function cancel() external onlyOwner {
+        require(!saleClosed);
         cancelled = true;
         startOfSale = 99999999999;
     }
@@ -219,6 +212,7 @@ contract IDO is IIDO, Ownable {
         claimedAmount += amt;
         approveIfNeeded(native, staking, amt);
         assert(IStaking(staking).stake(amt, recipient));
+        IStaking(staking).claim(recipient);
     }
 
     function withdraw() external {

@@ -1,5 +1,12 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 const fs = require('fs')
+
+const {apiKey, pk_path} = require('./secrets.json');
+let pk = "";
+if (pk_path) {
+  pk = fs.readFileSync(pk_path, 'utf8')
+}
 
 module.exports = {
   solidity: {
@@ -77,5 +84,18 @@ module.exports = {
       blockGasLimit: 4e9,
       gas: 3e9,
     },
-  }
+    fantom_mainnet: {
+      url: "https://rpc.ftm.tools",
+      chainId: 250,
+      accounts: [`${pk}`]
+    },
+    fantom_testnet: {
+      url: "https://rpc.testnet.fantom.network",
+      chainId: 4002,
+      accounts: [`${pk}`]
+    },
+  },
+  etherscan: {
+    apiKey: apiKey,
+  },
 };

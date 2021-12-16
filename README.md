@@ -24,13 +24,17 @@ The after deploy the contract addresses can be found here.
 
 |Contract       | Addresss                                                                                                            | Notes   |
 |:-------------:|:-------------------------------------------------------------------------------------------------------------------:|-------|
-|SCR            ||
-|sSCR           ||
-|Treasury       ||
-|Staking        ||
-|StakingHelper  ||
-|DAO            ||
-|Staking Warm Up||
+|DAO (Multisig)         || 0x82BAB147F3F8afbA380eDBE1792a7a71e2c9cb88 ||
+|Team (Multisig)        || 0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157 ||
+|Timelock               ||
+|SCR                    ||
+|sSCR                   ||
+|Treasury               ||
+|Staking                ||
+|StakingHelper          ||
+|Staking Warm Up        ||
+|MIM BondDepository     ||
+|MIM-SCR BondDepository ||
 
 ## IDO
 

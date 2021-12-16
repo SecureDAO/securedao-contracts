@@ -79,20 +79,22 @@ describe("IDO", function () {
     await router.deployed();
 
     config = {
+      dao: deployer.address,
       firstEpochTimeUnixSeconds: firstEpochTimeUnixSeconds,
       firstEpochNumber: firstEpochNumber,
       epochLengthInSeconds: epochLengthInSeconds,
       initialRewardRate: initialRewardRate,
-      daiBondBCV: daiBondBCV,
       bondVestingLengthSeconds: bondVestingLengthSeconds,
-      minBondPrice: minBondPrice,
       maxBondPayout: maxBondPayout,
-      bondFee: bondFee,
-      maxBondDebt: maxBondDebt,
       initialBondDebt: initialBondDebt,
-      initialSCR: initialSCR,
-      initialPriceSCR: initialPrice,
       initialIndex: initialIndex,
+      bondFee: bondFee,
+      daiBondBCV: daiBondBCV,
+      lpBondBCV: daiBondBCV,
+      minBondPriceLP: minBondPrice,
+      minBondPriceReserve: minBondPrice,
+      maxBondDebtReserve: maxBondDebt,
+      maxBondDebtLP: maxBondDebt,
       deployer: deployer,
     }
 
@@ -140,7 +142,7 @@ describe("IDO", function () {
       const args = [
         dai.address,
         deployed.staking.address,
-        deployer.address,
+        finalizer.address,
         totalNativeForSale,
         salePrice,
         startOfSale,
@@ -148,7 +150,6 @@ describe("IDO", function () {
       ]
       ido = await IDO.deploy(...args);
       await ido.deployed();
-      await ido.setFinalizer(finalizer.address).then(tx=>tx.wait());
     })
 
     describe("the sale has not started", async function () {
@@ -552,12 +553,6 @@ describe("IDO", function () {
         await ido.connect(caller).cancel().then(tx=>tx.wait());
       })
 
-      it("Can set the finalizer", async function () {
-        await ido.deployed();
-
-        await ido.connect(caller).setFinalizer(buyer.address).then(tx=>tx.wait());
-      })
-
       it("Cannot finalize the sale", async function() {
         await ido.deployed();
 
@@ -599,13 +594,6 @@ describe("IDO", function () {
         await ido.deployed();
 
         await expect(ido.connect(caller).cancel())
-          .to.be.revertedWith('Ownable: caller is not the owner');
-      })
-
-      it("Cannot set the finalizer", async function () {
-        await ido.deployed();
-
-        await expect(ido.connect(caller).setFinalizer(buyer.address))
           .to.be.revertedWith('Ownable: caller is not the owner');
       })
 
