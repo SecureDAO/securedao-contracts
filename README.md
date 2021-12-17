@@ -36,8 +36,8 @@ The after deploy the contract addresses can be found here.
 |Staking Warm Up        | 0x544c670255D53D34163B87c10043bfa4e4d84F34 |[ftmscan](https://ftmscan.com/address/0x544c670255D53D34163B87c10043bfa4e4d84F34)|
 |MIM BondDepository     | 0x3972dc5D892aE4026416134bc251152067DB0665 |[ftmscan](https://ftmscan.com/address/0x3972dc5D892aE4026416134bc251152067DB0665)|
 |MIM-SCR BondDepository | 0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5 |[ftmscan](https://ftmscan.com/address/0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5)|
-|IDO                    | 0xd641887848eB23b81B9DcAA3956448a6c717e842 |[ftmscan](https://ftmscan.com/address/0xd641887848eB23b81B9DcAA3956448a6c717e842)|
-|IDO Finalizer          | 0x3F29543F1E1C03146a6475b9CF8D2D419E7edd89 |[ftmscan](https://ftmscan.com/address/0x3F29543F1E1C03146a6475b9CF8D2D419E7edd89)|
+|IDO                    | 0x39D08B1AeD049148704856b7cFC2d908689dFAa9 |[ftmscan](https://ftmscan.com/address/0x39D08B1AeD049148704856b7cFC2d908689dFAa9)|
+|IDO Finalizer          | 0x1AAC063847e65B5B1F77Bb8f0A7cec085eFB28cd |[ftmscan](https://ftmscan.com/address/0x1AAC063847e65B5B1F77Bb8f0A7cec085eFB28cd)|
 
 
 
