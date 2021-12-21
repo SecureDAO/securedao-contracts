@@ -165,6 +165,7 @@ class BondDepositoryDeployer {
     return bond;
   }
 }
+module.exports.BondDepositoryDeployer = BondDepositoryDeployer;
 
 module.exports.deployContracts = deployContracts;
 async function deployContracts(config, dai) {

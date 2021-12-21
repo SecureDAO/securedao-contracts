@@ -81,6 +81,7 @@ module.exports = {
       gas: 30000000000,
     },
     localhost: {
+      url: "http://localhost:8686/",
       blockGasLimit: 4e9,
       gas: 3e9,
     },
