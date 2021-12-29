@@ -11,3 +11,5 @@ crytic-export/
 package-lock.json
 
 secrets.json
+prepare-inputs.json
+prepare-output.json
