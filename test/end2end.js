@@ -150,13 +150,15 @@ describe("end2end", function () {
     await network.provider.send("evm_setNextBlockTimestamp", [Number(startOfPrivateSale)+publicSaleSeconds])
     await ido.disableWhiteList().then(tx=>tx.wait());
     await deployed.treasury.pushManagement(finalizer.address).then(tx=>tx.wait());
-    await network.provider.send("evm_setNextBlockTimestamp", [startOfSale+(3*publicSaleSeconds)])
+    await network.provider.send("evm_setNextBlockTimestamp", [startOfSale+(4*publicSaleSeconds)])
     await finalizer.finalize();
     await ido.claim().then(tx=>tx.wait());
 
     expect(await deployedBonds.daiBond.bondPriceInUSD()).to.eq(eth.mul(102));
     expect(await deployedBonds.lpBond.bondPriceInUSD()).to.gte(eth.mul(95));
     expect(await deployedBonds.lpBond.bondPriceInUSD()).to.lte(eth.mul(97));
+    expect(await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, eth)).to.eq("63245553203367");
+    expect(await deployed.treasuryWrapper.valueOfToken(dai.address, eth)).to.eq(gwei);
   })
 })
 
