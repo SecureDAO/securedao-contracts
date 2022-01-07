@@ -1,14 +1,15 @@
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
-const fs = require('fs')
+import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-waffle";
+import { HardhatUserConfig } from "hardhat/config";
+import { readFileSync } from 'fs';
 
-const {etherscanAPIKey, pk_path} = require('./secrets.json');
+import secrets from './secrets.json';
 let pk = "";
-if (pk_path) {
-  pk = fs.readFileSync(pk_path, 'utf8')
+if (secrets.pk_path) {
+  pk = readFileSync(secrets.pk_path, 'utf8')
 }
 
-module.exports = {
+const config = {
   solidity: {
     compilers: [
       {
@@ -97,6 +98,8 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: etherscanAPIKey,
+    apiKey: secrets.etherscanAPIKey,
   },
 };
+
+export default config;
