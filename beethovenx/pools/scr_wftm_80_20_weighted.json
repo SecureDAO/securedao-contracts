@@ -1,0 +1,24 @@
+{
+    "network": "fantom",
+    "gasSpeed":"average",
+    "gasPriceOverride":"",
+    "name": "Prelude to Security",
+    "symbol": "PTS",
+    "poolType": "WeightedPool2Tokens",
+    "swapFeePercent": "1.0",
+    "fromInternalBalance": false,
+    "oracleEnabled": true,
+    "owner": "0xCd983793ADb846dcE4830c22F30C7Ef0C864a776",
+    "tokens": {
+        "0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a": {
+            "weight": "0.8",
+            "initialBalance": "600",
+            "allowance": -1
+        },
+        "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83": {
+            "weight": "0.2",
+            "initialBalance": "4000",
+            "allowance": -1
+        }
+    }
+}
