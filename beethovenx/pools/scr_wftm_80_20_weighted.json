@@ -1,9 +1,9 @@
 {
     "network": "fantom",
-    "gasSpeed":"average",
-    "gasPriceOverride":"",
+    "gasSpeed": "average",
+    "gasPriceOverride": "",
     "name": "Prelude to Security",
-    "symbol": "PTS",
+    "symbol": "BPT-PTS",
     "poolType": "WeightedPool2Tokens",
     "swapFeePercent": "1.0",
     "fromInternalBalance": false,
@@ -12,13 +12,14 @@
     "tokens": {
         "0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a": {
             "weight": "0.8",
-            "initialBalance": "600",
+            "initialBalance": "6",
             "allowance": -1
         },
         "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83": {
             "weight": "0.2",
-            "initialBalance": "4000",
+            "initialBalance": "120",
             "allowance": -1
         }
-    }
+    },
+    "poolId": "c4dac57a46a0a1acd0eb95eddef5257926279960000200000000000000000150"
 }
