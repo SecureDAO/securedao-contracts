@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 import secrets from './secrets.json';
 let pk = "";
 if (secrets.pk_path) {
-  pk = readFileSync(secrets.pk_path, 'utf8')
+  pk = readFileSync(secrets.pk_path, 'utf8').trim()
 }
 
 const config = {
@@ -89,12 +89,12 @@ const config = {
     fantom_mainnet: {
       url: "https://rpc.ftm.tools",
       chainId: 250,
-      accounts: [`${pk}`]
+      accounts: [`${pk.replace(new RegExp("^" + "0x"), '')}`]
     },
     fantom_testnet: {
       url: "https://rpc.testnet.fantom.network",
       chainId: 4002,
-      accounts: [`${pk}`]
+      accounts: [`${pk.replace(new RegExp("^" + "0x"), '')}`]
     },
   },
   etherscan: {
