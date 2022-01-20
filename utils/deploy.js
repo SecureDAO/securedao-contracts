@@ -122,6 +122,77 @@ class DistributorDeployer {
   }
 }
 
+class UniswapV2OracleDeployer {
+  constructor(deployerAddress, factoryAddress, tokenAAddress, tokenBAddress) {
+    this.deployer = deployerAddress;
+    this.factory = factoryAddress;
+    this.tokenA = tokenAAddress;
+    this.tokenB = tokenBAddress;
+  }
+
+  async deploy() {
+    const Oracle = await ethers.getContractFactory(
+      'UniswapV2Oracle',
+      this.deployer,
+      this.factory,
+      this.tokenA,
+      this.tokenB
+    );
+    const oracle = await Oracle.deploy();
+    await oracle.deployed();
+
+    return oracle;
+  }
+}
+module.exports.UniswapV2OracleDeployer = UniswapV2OracleDeployer;
+
+class UniswapV2OracleBondingCalculatorDeployer {
+  constructor(deployerAddress, oracleAddress) {
+    this.deployer = deployerAddress;
+    this.oracle = oracleAddress;
+  }
+
+  async deploy() {
+    const Calc = await ethers.getContractFactory('UniswapV2OracleBondingCalculator', this.deployer, this.oracle);
+    const calc = await Calc.deploy();
+    await calc.deployed();
+
+    return calc;
+  }
+}
+module.exports.UniswapV2OracleBondingCalculatorDeployer = UniswapV2OracleBondingCalculatorDeployer;
+
+class ChainlinkBondingCalculatorDeployer {
+  constructor(deployer, liquid) {
+    this.deployer = deployer;
+    this.liquid = liquid;
+  }
+
+  async deploy() {
+    const Calc = await ethers.getContractFactory('ChainlinkBondingCalculator', this.deployer);
+    const calc = await Calc.deploy();
+    await calc.deployed();
+
+    return calc;
+  }
+}
+module.exports.ChainlinkBondingCalculatorDeployer = ChainlinkBondingCalculatorDeployer;
+
+class ReserveBondingCalculatorDeployer {
+  constructor(deployer, liquid) {
+    this.deployer = deployer;
+    this.liquid = liquid;
+  }
+
+  async deploy() {
+    const Calc = await ethers.getContractFactory('ReserveBondingCalculator', this.deployer);
+    const calc = await Calc.deploy();
+    await calc.deployed();
+
+    return calc;
+  }
+}
+
 class BondingCalculatorDeployer {
   constructor(deployer, liquid) {
     this.deployer = deployer;
@@ -136,6 +207,36 @@ class BondingCalculatorDeployer {
     return olympusBondingCalculator;
   }
 }
+
+class BondDepositoryV2Deployer {
+  constructor(deployer, liquid, treasury, principleAddress, calculatorAddress, dao) {
+    this.deployer = deployer;
+    this.liquid = liquid;
+    this.treasury = treasury;
+    this.principleAddress = principleAddress;
+    this.calculatorAddress = calculatorAddress;
+    this.daoAddress = dao;
+  }
+
+  async deploy() {
+    const bonding = await ethers.getContractFactory(
+      'SecureBondDepositoryV2',
+      this.deployer
+    );
+    // Deploy DAI bond
+    const bond = await bonding.deploy(
+      this.liquid.address,
+      this.principleAddress,
+      this.treasury.address,
+      this.daoAddress,
+      this.calculatorAddress
+    );
+    await bond.deployed();
+
+    return bond;
+  }
+}
+module.exports.BondDepositoryV2Deployer = BondDepositoryV2Deployer;
 
 class BondDepositoryDeployer {
   constructor(deployer, liquid, treasury, principleAddress, calculatorAddress, dao) {
@@ -219,10 +320,12 @@ async function deployContracts(config, dai) {
     ).deploy();
 
      // Deploy bonding calc
-    const olympusBondingCalculator = await new BondingCalculatorDeployer(deployer, scr).deploy();
+    const chainlinkCalc = await new ChainlinkBondingCalculatorDeployer(deployer, scr).deploy();
+    const reserveCalc = await new ReserveBondingCalculatorDeployer(deployer, scr).deploy();
 
     return {
-      olympusBondingCalculator: olympusBondingCalculator,
+      reserveCalc,
+      chainlinkCalc,
       scr: scr,
       sscr: sscr,
       staking: staking,
@@ -241,7 +344,8 @@ async function deployBonds(dai, scrDaiLPAddress, config, deployed) {
     let dao = config.dao;
     let deployer = config.deployer;
     let treasury = deployed.treasury;
-    let olympusBondingCalculator = deployed.olympusBondingCalculator;
+    let reserveBondingCalculator = deployed.reserveCalc;
+    let chainlinkBondingCalculator = deployed.chainlinkCalc;
 
     // Ethereum 0 address, used when toggling changes in treasury
     const zeroAddress = '0x0000000000000000000000000000000000000000';
@@ -249,12 +353,12 @@ async function deployBonds(dai, scrDaiLPAddress, config, deployed) {
     const daiBond = await new BondDepositoryDeployer(deployer, scr, treasury, dai.address, zeroAddress, dao).deploy();
 
     // Deploy LP bond
-    const lpBond = await new BondDepositoryDeployer(
+    const lpBond = await new BondDepositoryV2Deployer(
       deployer,
       scr,
       treasury,
       scrDaiLPAddress,
-      olympusBondingCalculator.address,
+      chainlinkBondingCalculator.address,
       dao
     ).deploy();
 
@@ -300,7 +404,7 @@ async function bootstrap(dai, config, deployed) {
 }
 
 module.exports.bootstrapBonds = bootstrapBonds;
-async function bootstrapBonds(dai, scrDaiLPAddress, config, deployed, deployedBonds) {
+async function bootstrapBonds(dai, priceFeed, scrDaiLPAddress, config, deployed, deployedBonds) {
     // Ethereum 0 address, used when toggling changes in treasury
     const zeroAddress = '0x0000000000000000000000000000000000000000';
     // DAI bond BCV
@@ -320,7 +424,8 @@ async function bootstrapBonds(dai, scrDaiLPAddress, config, deployed, deployedBo
     // Initial Bond debt
     const initialBondDebt = config.initialBondDebt;
 
-    let olympusBondingCalculator = deployed.olympusBondingCalculator;
+    let reserveBondingCalculator = deployed.reserveCalc;
+    let chainlinkBondingCalculator = deployed.chainlinkCalc;
     let lpBond = deployedBonds.lpBond;
     let daiBond = deployedBonds.daiBond;
     let staking = deployed.staking;
@@ -335,7 +440,7 @@ async function bootstrapBonds(dai, scrDaiLPAddress, config, deployed, deployedBo
     ).then(tx => tx.wait());
 
     // Set staking for DAI bond
-    await daiBond.setStaking(staking.address, stakingHelper.address).then(tx => tx.wait());
+    await daiBond.setStaking(staking.address, false).then(tx => tx.wait());
 
     // Set LP bond terms
     await lpBond.initializeBondTerms(
@@ -345,12 +450,14 @@ async function bootstrapBonds(dai, scrDaiLPAddress, config, deployed, deployedBo
     ).then(tx => tx.wait());
 
     // Set staking for DAI bond
-    await lpBond.setStaking(staking.address, stakingHelper.address).then(tx => tx.wait());
+    await lpBond.setStaking(staking.address).then(tx => tx.wait());
 
     // queue and toggle DAI bond reserve depositor
     await treasury.queue('0', daiBond.address).then(tx => tx.wait());
     await treasury.toggle('0', daiBond.address, zeroAddress).then(tx => tx.wait());
     await treasury.queue('4', lpBond.address).then(tx => tx.wait());
-    await treasury.toggle('4', lpBond.address, olympusBondingCalculator.address).then(tx => tx.wait());
+    await treasury.toggle('4', lpBond.address, chainlinkBondingCalculator.address).then(tx => tx.wait());
+
+    await chainlinkBondingCalculator.updatePriceFeed(scrDaiLPAddress, priceFeed);
 }
 

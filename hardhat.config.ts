@@ -2,6 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import { HardhatUserConfig } from "hardhat/config";
 import { readFileSync } from 'fs';
+import "@nomiclabs/hardhat-etherscan";
 
 import secrets from './secrets.json';
 let pk = "";

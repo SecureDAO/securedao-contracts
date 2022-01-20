@@ -16,10 +16,18 @@ describe("end2end", function () {
     const [deployer, team] = await ethers.getSigners();
 
     const publicSaleSeconds = 24*3600;
+    // Deploy mock feed
+    const priceFeedDecimals = 8;
+    const price = ethers.BigNumber.from(63245553203367);
+    const Feed = await ethers.getContractFactory('PriceFeed');
+    const feed = await Feed.deploy(priceFeedDecimals, price)
+    await feed.deployed();
+
     // Deploy DAI
     const DAI = await ethers.getContractFactory('DAI');
     const dai = await DAI.deploy( 0 );
     await dai.deployed();
+    const MIMAddress = dai.address;
     await dai.mint( deployer.address, eth.mul(1e6) );
 
     const Factory = await ethers.getContractFactory('Factory');
@@ -45,18 +53,18 @@ describe("end2end", function () {
     // Initial reward rate for epoch
     const initialRewardRate = 30000; // 3%
     // MIM bond BCV
-    const daiBondBCV = 873;
+    const daiBondBCV = 1;
     // MIM-SCR bond BCV
-    const lpBondBCV = 370;
+    const lpBondBCV = 1;
     // Bond vesting length in blocks. 33110 ~ 5 days
     const bondVestingLengthSeconds = 3600 * 24 * 5;
     // Min bond price
-    const minBondPriceReserve = '10200';
-    const minBondPriceLP = '820'; // TODO
+    const minBondPriceReserve = 1;
+    const minBondPriceLP = 1; // TODO
     // Max bond payout
     const maxBondPayout = 410; // 0.41%
     // DAO fee for bond
-    const bondFee = 1000; // 10%
+    const bondFee = 0; // 10%
     // Max debt bond can take on
     const maxBondDebtLP = gwei.mul(8).mul(1e4);
     const maxBondDebtReserve = gwei.mul(3).mul(1e4);
@@ -103,9 +111,10 @@ describe("end2end", function () {
     await factory.createPair(deployed.scr.address, reserve.address).then(tx => tx.wait());
     const scrReserveLPAddress = await factory.getPair(deployed.scr.address, reserve.address);
 
+    console.log("feed addrress ", feed.address);
     const deployedBonds = await deployBonds(reserve, scrReserveLPAddress, config, deployed);
 
-    await bootstrapBonds(reserve, scrReserveLPAddress, config, deployed, deployedBonds);
+    await bootstrapBonds(reserve, feed.address, scrReserveLPAddress, config, deployed, deployedBonds);
 
     const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
     finalizer = await Finalizer.deploy(
@@ -113,7 +122,7 @@ describe("end2end", function () {
       deployed.staking.address,
       team.address,
       factory.address,
-      deployed.olympusBondingCalculator.address
+      deployed.chainlinkCalc.address
     );
     await finalizer.deployed()
 
@@ -150,15 +159,69 @@ describe("end2end", function () {
     await network.provider.send("evm_setNextBlockTimestamp", [Number(startOfPrivateSale)+publicSaleSeconds])
     await ido.disableWhiteList().then(tx=>tx.wait());
     await deployed.treasury.pushManagement(finalizer.address).then(tx=>tx.wait());
-    await network.provider.send("evm_setNextBlockTimestamp", [startOfSale+(4*publicSaleSeconds)])
+    await network.provider.send("evm_setNextBlockTimestamp", [startOfSale+(5*publicSaleSeconds)])
     await finalizer.finalize();
     await ido.claim().then(tx=>tx.wait());
 
-    expect(await deployedBonds.daiBond.bondPriceInUSD()).to.eq(eth.mul(102));
-    expect(await deployedBonds.lpBond.bondPriceInUSD()).to.gte(eth.mul(95));
-    expect(await deployedBonds.lpBond.bondPriceInUSD()).to.lte(eth.mul(97));
-    expect(await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, eth)).to.eq("63245553203367");
+    const expectedPrice = price; // 8 decimals
+    expect(await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, eth)).to.eq(expectedPrice.mul(10));
+    expect(await deployedBonds.lpBond.bondPrice()).to.eq(200);
+
+    const t = eth.mul(eth).div(expectedPrice.mul(1e10))
+    console.log("test value ", t);
+    expect(await deployedBonds.lpBond.payoutFor(
+      await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, t)
+    )).to.eq('499999999');
+
+    const expectedPayout = expectedPrice.mul(10).div(2);
+    expect(await deployedBonds.lpBond.payoutFor(
+      await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, eth)
+    )).to.eq(expectedPayout);
+    expect(await deployedBonds.lpBond.bondPriceInUSD()).to.eq(eth.mul(2));
+
+    expect(await deployedBonds.daiBond.bondPrice()).to.eq(100);
     expect(await deployed.treasuryWrapper.valueOfToken(dai.address, eth)).to.eq(gwei);
+    expect(await deployedBonds.daiBond.bondPriceInUSD()).to.eq(eth);
+
+    await deployed.treasury.pullManagement();
+    await deployed.treasury.queue(0, deployer.address);
+    await deployed.treasury.toggle(0, deployer.address, zeroAddress);
+    await deployed.treasury.queue(3, deployer.address);
+    await deployed.treasury.toggle(3, deployer.address, zeroAddress);
+    await deployed.treasury.manage(reserve.address, eth.mul(100)).then(tx=>tx.wait())
+
+    await reserve.approve(deployed.treasury.address, eth.mul(10000)).then(tx=>tx.wait())
+    await deployed.treasury.deposit(eth.mul(50), MIMAddress, 0).then(tx=>tx.wait())
+
+    await reserve.approve(router.address, largeApproval).then(tx=>tx.wait())
+    await deployed.scr.approve(router.address, largeApproval).then(tx=>tx.wait())
+    await router.addLiquidity(
+      reserve.address,
+      deployed.scr.address,
+      eth.mul(50),
+      gwei.mul(50),
+      0,
+      0,
+      deployer.address,
+      eth
+    ).then(tx=>tx.wait())
+    const bal = await DAI.attach(scrReserveLPAddress).balanceOf(deployer.address)
+    console.log("balance ", bal)
+    const depostBal = bal.div(4);
+    expect(await deployedBonds.lpBond.principle()).to.eq(scrReserveLPAddress)
+    const payout = await deployedBonds.lpBond.payoutFor(
+      await deployed.treasuryWrapper.valueOfToken(scrReserveLPAddress, depostBal)
+    );
+    console.log("deposit bal ", depostBal)
+    console.log("payout ", payout)
+    await DAI.attach(scrReserveLPAddress).approve(
+      deployedBonds.lpBond.address,
+      eth.mul(10000),
+    )
+    await deployedBonds.lpBond.connect(deployer).deposit(depostBal, eth, deployer.address)
+    const bondInfo = await deployedBonds.lpBond.bondInfo(deployer.address)
+    const interest = bondInfo.payout;
+    expect(interest).to.eq(payout)
   })
 })
 

@@ -77,6 +77,7 @@ async function main() {
       deployer: deployer,
     }
 
+    console.log(config);
     // Deploy contracts
     let deployed = await deployContracts(config, reserve);
 
@@ -93,190 +94,190 @@ async function main() {
 
     await bootstrapBonds(reserve, scrReserveLPAddress, config, deployed, deployedBonds);
 
-    console.log("contracts boostrapped");
-    const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
-    finalizer = await Finalizer.deploy(
-      deployed.treasury.address,
-      deployed.staking.address,
-      team,
-      factory.address,
-      deployed.olympusBondingCalculator.address
-    );
-    await finalizer.deployed()
+    //console.log("contracts boostrapped");
+    //const Finalizer = await ethers.getContractFactory('Finalizer', deployer);
+    //finalizer = await Finalizer.deploy(
+    //  deployed.treasury.address,
+    //  deployed.staking.address,
+    //  team,
+    //  factory.address,
+    //  deployed.olympusBondingCalculator.address
+    //);
+    //await finalizer.deployed()
 
-    const IDO = await ethers.getContractFactory('IDO');
-    const args = [
-      reserve.address,
-      deployed.staking.address,
-      finalizer.address,
-      totalNativeForSale,
-      salePrice,
-      startOfSale,
-      publicSaleAlloc,
-    ]
-    const ido = await IDO.deploy(...args);
-    await ido.deployed();
+    //const IDO = await ethers.getContractFactory('IDO');
+    //const args = [
+    //  reserve.address,
+    //  deployed.staking.address,
+    //  finalizer.address,
+    //  totalNativeForSale,
+    //  salePrice,
+    //  startOfSale,
+    //  publicSaleAlloc,
+    //]
+    //const ido = await IDO.deploy(...args);
+    //await ido.deployed();
 
-    await finalizer.setIDO(ido.address).then(tx=>tx.wait());
+    //await finalizer.setIDO(ido.address).then(tx=>tx.wait());
 
-    const Timelock = await ethers.getContractFactory("Timelock");
-    const timelock = await Timelock.deploy(timelockMinimum, [daoAddress], [daoAddress])
-    await timelock.deployed();
+    //const Timelock = await ethers.getContractFactory("Timelock");
+    //const timelock = await Timelock.deploy(timelockMinimum, [daoAddress], [daoAddress])
+    //await timelock.deployed();
 
-    // Transfer ownership for everything except for the IDO (need to add whitelist)
-    console.log("transferring ownership");
-    await deployed.treasury.pushManagement(finalizer.address).then(tx=>tx.wait());
-    await finalizer.transferOwnership(timelock.address).then(tx=>tx.wait());
-    await deployed.staking.pushManagement(timelock.address).then(tx=>tx.wait());
-    await deployed.distributor.pushPolicy(timelock.address).then(tx=>tx.wait());
-    await deployed.sscr.pushManagement(timelock.address).then(tx=>tx.wait());
-    await deployedBonds.lpBond.pushManagement(timelock.address).then(tx=>tx.wait());
-    await deployedBonds.daiBond.pushManagement(timelock.address).then(tx=>tx.wait());
+    //// Transfer ownership for everything except for the IDO (need to add whitelist)
+    //console.log("transferring ownership");
+    //await deployed.treasury.pushManagement(finalizer.address).then(tx=>tx.wait());
+    //await finalizer.transferOwnership(timelock.address).then(tx=>tx.wait());
+    //await deployed.staking.pushManagement(timelock.address).then(tx=>tx.wait());
+    //await deployed.distributor.pushPolicy(timelock.address).then(tx=>tx.wait());
+    //await deployed.sscr.pushManagement(timelock.address).then(tx=>tx.wait());
+    //await deployedBonds.lpBond.pushManagement(timelock.address).then(tx=>tx.wait());
+    //await deployedBonds.daiBond.pushManagement(timelock.address).then(tx=>tx.wait());
 
-    const ADDRESSES = {
-        DAO_ADDRESS: daoAddress,
-        SCR_ADDRESS: deployed.scr.address,
-        SSCR_ADDRESS: deployed.sscr.address,
-        MIM_ADDRESS: reserve.address,
-        STAKING_ADDRESS: deployed.staking.address,
-        STAKING_HELPER_ADDRESS: deployed.stakingHelper.address,
-        SCR_BONDING_CALC_ADDRESS: deployed.olympusBondingCalculator.address,
-        TREASURY_ADDRESS: deployed.treasury.address,
-        ZAPIN_ADDRESS: "0xc669dC61aF974FdF50758d95306e4083D36f1430",
-        MIM_BOND_ADDRESS: deployedBonds.daiBond.address,
-        MIM_SCR_LP_ADDRESS: scrReserveLPAddress,
-        MIM_SCR_LP_BOND_ADDRESS: deployedBonds.lpBond.address,
-        IDO_ADDRESS: ido.address,
-    };
+    //const ADDRESSES = {
+    //    DAO_ADDRESS: daoAddress,
+    //    SCR_ADDRESS: deployed.scr.address,
+    //    SSCR_ADDRESS: deployed.sscr.address,
+    //    MIM_ADDRESS: reserve.address,
+    //    STAKING_ADDRESS: deployed.staking.address,
+    //    STAKING_HELPER_ADDRESS: deployed.stakingHelper.address,
+    //    SCR_BONDING_CALC_ADDRESS: deployed.olympusBondingCalculator.address,
+    //    TREASURY_ADDRESS: deployed.treasury.address,
+    //    ZAPIN_ADDRESS: "0xc669dC61aF974FdF50758d95306e4083D36f1430",
+    //    MIM_BOND_ADDRESS: deployedBonds.daiBond.address,
+    //    MIM_SCR_LP_ADDRESS: scrReserveLPAddress,
+    //    MIM_SCR_LP_BOND_ADDRESS: deployedBonds.lpBond.address,
+    //    IDO_ADDRESS: ido.address,
+    //};
 
-    console.log("factory ", factory.address);
-    console.log("finalizer ", finalizer.address);
-    console.log(ADDRESSES);
+    //console.log("factory ", factory.address);
+    //console.log("finalizer ", finalizer.address);
+    //console.log(ADDRESSES);
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.scr.address,
-      constructorArguments: [],
-    });
-    } catch (error) {
-      console.log("couldn't verify SCR", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.scr.address,
+    //  constructorArguments: [],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify SCR", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.sscr.address,
-      constructorArguments: [],
-    });
-    } catch (error) {
-      console.log("couldn't verify sSCR", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.sscr.address,
+    //  constructorArguments: [],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify sSCR", error);
+    //}
 
-    try{
-    await hre.run("verify:verify", {
-      address: deployed.treasury.address,
-      constructorArguments: [
-        deployed.scr.address,
-        MIMAddress,
-        0,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify treasury", error);
-    }
+    //try{
+    //await hre.run("verify:verify", {
+    //  address: deployed.treasury.address,
+    //  constructorArguments: [
+    //    deployed.scr.address,
+    //    MIMAddress,
+    //    0,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify treasury", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.staking.address,
-      constructorArguments: [
-        deployed.scr.address,
-        deployed.sscr.address,
-        epochLengthInSeconds,
-        firstEpochNumber,
-        firstEpochTimeUnixSeconds,
-      ],
-    });
-    } catch {
-      console.log("couldn't verify staking", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.staking.address,
+    //  constructorArguments: [
+    //    deployed.scr.address,
+    //    deployed.sscr.address,
+    //    epochLengthInSeconds,
+    //    firstEpochNumber,
+    //    firstEpochTimeUnixSeconds,
+    //  ],
+    //});
+    //} catch {
+    //  console.log("couldn't verify staking", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.stakingWarmup.address,
-      constructorArguments: [
-        deployed.staking.address,
-        deployed.scr.address,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify stakingWarmup", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.stakingWarmup.address,
+    //  constructorArguments: [
+    //    deployed.staking.address,
+    //    deployed.scr.address,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify stakingWarmup", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.stakingHelper.address,
-      constructorArguments: [
-        deployed.staking.address,
-        deployed.scr.address,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify stakingHelper ", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.stakingHelper.address,
+    //  constructorArguments: [
+    //    deployed.staking.address,
+    //    deployed.scr.address,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify stakingHelper ", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.distributor.address,
-      constructorArguments: [
-        deployed.treasury.address,
-        deployed.scr.address,
-        epochLengthInSeconds,
-        firstEpochTimeUnixSeconds,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify distributor ", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.distributor.address,
+    //  constructorArguments: [
+    //    deployed.treasury.address,
+    //    deployed.scr.address,
+    //    epochLengthInSeconds,
+    //    firstEpochTimeUnixSeconds,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify distributor ", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.olympusBondingCalculator.address,
-      constructorArguments: [
-        deployed.scr.address,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify bonding calculator ", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.olympusBondingCalculator.address,
+    //  constructorArguments: [
+    //    deployed.scr.address,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify bonding calculator ", error);
+    //}
 
-    try {
-    await hre.run("verify:verify", {
-      address: deployed.lpBond.address,
-      constructorArguments: [
-        deployed.scr.address,
-        scrReserveLPAddress,
-        deployed.treasury.address,
-        daoAddress,
-        deployed.olympusBondingCalculator.address,
-      ],
-    });
-    } catch (error) {
-      console.log("couldn't verify lp bond ", error);
-    }
+    //try {
+    //await hre.run("verify:verify", {
+    //  address: deployed.lpBond.address,
+    //  constructorArguments: [
+    //    deployed.scr.address,
+    //    scrReserveLPAddress,
+    //    deployed.treasury.address,
+    //    daoAddress,
+    //    deployed.olympusBondingCalculator.address,
+    //  ],
+    //});
+    //} catch (error) {
+    //  console.log("couldn't verify lp bond ", error);
+    //}
 
-    try {
-      await hre.run("verify:verify", {
-        address: deployed.daiBond.address,
-        constructorArguments: [
-          deployed.scr.address,
-          MIMAddress,
-          deployed.treasury.address,
-          daoAddress,
-          zeroAddress,
-        ],
-      });
-    } catch (error) {
-      console.log("couldn't verify mim bond ", error);
-    }
+    //try {
+    //  await hre.run("verify:verify", {
+    //    address: deployed.daiBond.address,
+    //    constructorArguments: [
+    //      deployed.scr.address,
+    //      MIMAddress,
+    //      deployed.treasury.address,
+    //      daoAddress,
+    //      zeroAddress,
+    //    ],
+    //  });
+    //} catch (error) {
+    //  console.log("couldn't verify mim bond ", error);
+    //}
 }
 
 main()

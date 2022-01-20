@@ -1,6 +1,14 @@
 import { ethers } from "hardhat";
 
 export const addresses: Record<string, string> = {
+    beetsHelpers: "0xfE18C7C70b0a2c6541bEde0367124278BC345Dc8",
+    beetsMasterChef: "0x8166994d9ebBe5829EC86Bd81258149B87faCfd3",
+    beetsVault: "0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce",
+    steadyBeets2BPT: "0xeCAa1cBd28459d34B766F9195413Cb20122Fb942",
+    ziggyStardustBPT: "0xD163415BD34EF06f57C58D2AEd5A5478AfB464cC",
+    mim: "0x82f0B8B456c1A451378467398982d4834b6829c1",
+    dai: "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E",
+    usdc: "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75",
     multisig: "0x82BAB147F3F8afbA380eDBE1792a7a71e2c9cb88",
     team: "0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157",
     timelock: "0xac4220abfd028f9c12b7916235180bbe73619b00",
@@ -17,6 +25,9 @@ export const addresses: Record<string, string> = {
     mimScrBond: "0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5",
     ido: "0xd641887848eB23b81B9DcAA3956448a6c717e842",
     finalizer: "0x3F29543F1E1C03146a6475b9CF8D2D419E7edd89",
+    beethovenVault: "0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce",
+    wftm: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
+    wftmUsdcPriceFeed: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
 }
 
 export const contracts: Record<string, string> = {
