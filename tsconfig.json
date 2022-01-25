@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2018",
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
@@ -9,11 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist"
   },
-  "include": [
-    "hardhat.config.ts",
-    "./scripts",
-    "./deploy",
-    "./test",
-    "typechain/**/*"
-  ]
+  "include": ["./scripts", "./test"],
+  "files": ["./hardhat.config.ts"]
 }

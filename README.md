@@ -39,6 +39,8 @@ The after deploy the contract addresses can be found here.
 |MIM-SCR BondDepository | 0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5 |[ftmscan](https://ftmscan.com/address/0x1fAdE3E269d8D3734f6AC6dC7f86dCFc3f1F73A5)|
 |IDO                    | 0x39D08B1AeD049148704856b7cFC2d908689dFAa9 |[ftmscan](https://ftmscan.com/address/0x39D08B1AeD049148704856b7cFC2d908689dFAa9)|
 |IDO Finalizer          | 0x1AAC063847e65B5B1F77Bb8f0A7cec085eFB28cd |[ftmscan](https://ftmscan.com/address/0x1AAC063847e65B5B1F77Bb8f0A7cec085eFB28cd)|
+|ERC20Balances API      | 0xEca81d5B4434F6FB20C53EC36bAfbdBa9b2e25E7 |[ftmscan](https://ftmscan.com/address/0xEca81d5B4434F6FB20C53EC36bAfbdBa9b2e25E7)|
+|BeetsOracle| 0xF0dB6BCe95B3c0C4439C74a70bA0e296f8b645E2
 
 
 
