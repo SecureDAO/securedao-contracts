@@ -65,6 +65,30 @@ async function main() {
 
     console.log("chainlink calc ", chainlinkBondingCalculator.address)
     console.log("bond deployed to ", bond.address);
+
+    try {
+      await hre.run("verify:verify", {
+        address: chainlinkBondingCalculator.address,
+        constructorArguments: [],
+      });
+    } catch (error) {
+      console.log("couldn't verify chainlink calc ", error);
+    }
+
+    try {
+      await hre.run("verify:verify", {
+        address: bond.address,
+        constructorArguments: [
+          scr.address,
+          principleAddress,
+          treasury.address,
+          daoAddress,
+          chainlinkBondingCalculator.address,
+        ],
+      });
+    } catch (error) {
+      console.log("couldn't verify wftm bond ", error);
+    }
 }
 
 main()
