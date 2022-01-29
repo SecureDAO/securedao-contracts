@@ -1,4 +1,10 @@
 export { abi as BalancerVault } from "./BalancerVault.json";
+export { abi as GnosisSafe } from "./GnosisSafe.json";
 export { abi as ERC20 } from "./ERC20.json";
+export { abi as DelegateRegistry } from "./DelegateRegistry.json";
+export { abi as SingletonFactory } from "./SingletonFactory.json";
 export { abi as BeetsMasterChef } from "./BeetsMasterChef.json";
+export { abi as BeetsBar } from "./BeetsBar.json";
 export { abi as BalancerHelpers } from "./BalancerHelpers.json";
+export { abi as UniswapV2Router02 } from "./UniswapV2Router02.json";
+export { abi as SnapshotDelegation } from "./SnapshotDelegation.json";

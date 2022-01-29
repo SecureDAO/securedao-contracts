@@ -1,20 +1,71 @@
 import { ethers } from "hardhat";
+import { Signer } from "ethers";
 import Safe from '@gnosis.pm/safe-core-sdk';
-import { MetaTransactionData, SafeTransactionDataPartial } from '@gnosis.pm/safe-core-sdk-types';
-import { SafeTransactionOptionalProps, ContractNetworksConfig, EthersAdapter, SafeFactory, SafeAccountConfig } from '@gnosis.pm/safe-core-sdk';
-import { SafeEthersSigner, SafeService } from '@gnosis.pm/safe-ethers-adapters';
+import { MetaTransactionData } from '@gnosis.pm/safe-core-sdk-types';
+import { EthersAdapter as EthAdapt, ContractNetworksConfig } from '@gnosis.pm/safe-core-sdk';
+import { SafeService } from '@gnosis.pm/safe-ethers-adapters';
+import SafeServiceClient from '@gnosis.pm/safe-service-client'
+import EthersAdapter from '@gnosis.pm/safe-ethers-lib'
+
+interface SendOpts {
+  nonce?: number;
+}
 
 export class GnosisMultiSend {
-  signer:ethers.api.Signer;
+  signer:Signer;
   safeAddress:string;
+  service:SafeService;
+  safeClient:SafeServiceClient;
+  safeServiceURL:string = "https://safe.fantom.network";
+  ethersAdapter:EthersAdapter;
+  safeSdk:Safe;
 
-  constructor(safeAddress:string, signer:ethers.api.Signer) {
+
+  constructor(safeAddress:string, signer:Signer, sdk:Safe) {
     this.signer = signer;
     this.safeAddress = safeAddress;
+    this.service = new SafeService(this.safeServiceURL)
+    this.ethersAdapter = new EthersAdapter({
+      ethers,
+      signer: this.signer
+    })
+    this.safeClient = new SafeServiceClient({
+      txServiceUrl: this.safeServiceURL,
+      ethAdapter: this.ethersAdapter,
+    })
+    this.safeSdk = sdk;
+  }
+
+  public static async create(safeAddress:string, signer:Signer):Promise<GnosisMultiSend> {
+    const ethAdapterOwner1 = new EthAdapt({
+      ethers,
+      signer: signer
+    })
+
+    const safeSdk = await Safe.create(
+      {
+        ethAdapter: ethAdapterOwner1,
+        safeAddress: safeAddress,
+        contractNetworks: await this.contractNetworks(signer)
+      }
+    )
+
+    return new GnosisMultiSend(safeAddress, signer, safeSdk);
+  }
+
+  public static async debug(signer: Signer, datas:any[], targets:string[]) {
+    for (let i = 0; i < datas.length; i++) {
+      console.log(targets[i]);
+      await signer.sendTransaction({
+        to: targets[i],
+        value: 0,
+        data: datas[i],
+      }).then(tx=>tx.wait());
+    }
   }
 
   public static prepareMetaTransactions(datas:any[], targets:string[]) : MetaTransactionData[]{
-    let transactions: MetaTransactionData[];
+    let transactions: MetaTransactionData[] = [];
     for (let i = 0; i < datas.length; i++) {
       transactions.push({
         to: targets[i],
@@ -27,7 +78,7 @@ export class GnosisMultiSend {
     return transactions;
   }
 
-  async contractNetworks(signer: ethers.api.Signer) : Promise<ContractNetworksConfig> {
+  public static async contractNetworks(signer: Signer) : Promise<ContractNetworksConfig> {
     const contractNetworks: ContractNetworksConfig = {
       [await signer.getChainId()]: {
         multiSendAddress: '0xd1b160Ee570632ac402Efb230d720669604918e8',
@@ -39,22 +90,21 @@ export class GnosisMultiSend {
     return contractNetworks;
   }
 
-  async send(transactions:MetaTransactionData[], options:SafeTransactionOptionalProps) {
+  public async nextNonce():Promise<number> {
+    const pending = await this.safeClient.getPendingTransactions(this.safeAddress);
+    return await this.safeSdk.getNonce() + pending.count;
+  }
 
-    const ethAdapterOwner1 = new EthersAdapter({
-      ethers,
-      signer: this.signer
-    })
+  public async send(transactions:MetaTransactionData[], options:SendOpts = {}) {
+    console.log(this.safeSdk.getAddress());
+    if (!options.nonce) {
+      options.nonce = await this.nextNonce();
+      console.log("nonce", options.nonce)
+    }
+    const safeTx = await this.safeSdk.createTransaction(transactions, options)
+    const safeTxHash = await this.safeSdk.getTransactionHash(safeTx);
 
-    const service = new SafeService("https://safe.fantom.network")
-
-    const safeSdk: Safe = await Safe.create({ ethAdapter: ethAdapterOwner1, safeAddress: this.safeAddress, contractNetworks: await this.contractNetworks(this.signer)})
-    console.log(safeSdk.getAddress());
-
-    const safeTx = await safeSdk.createTransaction(transactions, options)
-    const safeTxHash = await safeSdk.getTransactionHash(safeTx);
-
-    const signature = await safeSdk.signTransactionHash(safeTxHash);
-    await service.proposeTx(this.safeAddress, safeTxHash, safeTx, signature);
+    const signature = await this.safeSdk.signTransactionHash(safeTxHash);
+    await this.service.proposeTx(this.safeAddress, safeTxHash, safeTx, signature);
   }
 }

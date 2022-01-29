@@ -17,6 +17,18 @@ const config = {
         version: "0.8.1",
       },
       {
+        version: "0.7.6",
+      },
+      {
+        version: "0.7.2",
+        settings: {
+          optimizer: {
+            enabled: false,
+            runs: 200,
+          },
+        },
+      },
+      {
         version: "0.5.16",
         settings: {
           evmVersion: "istanbul",
@@ -83,9 +95,10 @@ const config = {
       gas: 30000000000,
     },
     localhost: {
-      url: "http://localhost:8686/",
+      url: "http://127.0.0.1:8686/",
       blockGasLimit: 4e9,
       gas: 3e9,
+      //accounts: [`${pk.replace(new RegExp("^" + "0x"), '')}`]
     },
     fantom_mainnet: {
       url: "https://rpc.ftm.tools",

@@ -2,24 +2,24 @@
     "network": "fantom",
     "gasSpeed": "average",
     "gasPriceOverride": "",
-    "name": "Prelude to Security",
-    "symbol": "BPT-PTS",
+    "name": "Sigma's Wrapped Symphony",
+    "symbol": "BPT-SWS",
     "poolType": "WeightedPool2Tokens",
     "swapFeePercent": "1.0",
     "fromInternalBalance": false,
     "oracleEnabled": true,
     "owner": "0xCd983793ADb846dcE4830c22F30C7Ef0C864a776",
     "tokens": {
-        "0x8183C18887aC4386CE09Dbdf5dF7c398DAcB2B5a": {
+        "0xA7727db8DB5afcA6d88eb7FB9E8e322dc043325a": {
             "weight": "0.8",
-            "initialBalance": "6",
+            "initialBalance": "10",
             "allowance": -1
         },
-        "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83": {
+        "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E": {
             "weight": "0.2",
-            "initialBalance": "120",
+            "initialBalance": "375",
             "allowance": -1
         }
     },
-    "poolId": "c4dac57a46a0a1acd0eb95eddef5257926279960000200000000000000000150"
+    "poolId": "43d668c6f709c9d7f05c9404707a10d968b0348c00020000000000000000020b"
 }

@@ -1,19 +1,17 @@
 import hre from "hardhat";
-import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
 import { ethers } from "hardhat";
 import Safe from '@gnosis.pm/safe-core-sdk';
-import { MetaTransactionData, SafeTransactionDataPartial } from '@gnosis.pm/safe-core-sdk-types';
-import { SafeTransactionOptionalProps, ContractNetworksConfig, EthersAdapter, SafeFactory, SafeAccountConfig } from '@gnosis.pm/safe-core-sdk';
-import { SafeEthersSigner, SafeService } from '@gnosis.pm/safe-ethers-adapters';
-import { BeetsMasterChef, BalancerVault, ERC20 } from "../../abi";
-import { addresses, contracts } from "../constants";
+import { MetaTransactionData } from '@gnosis.pm/safe-core-sdk-types';
+import { SafeTransactionOptionalProps, ContractNetworksConfig, EthersAdapter } from '@gnosis.pm/safe-core-sdk';
+import { SafeService } from '@gnosis.pm/safe-ethers-adapters';
+import { BeetsMasterChef, ERC20 } from "../../abi";
+import { preludeChefPID, addresses } from "../constants";
 
 async function main() {
   const debug = false;
   //const debug = true;
 
   const safeAddress = "0x82BAB147F3F8afbA380eDBE1792a7a71e2c9cb88";
-  //const safeAddress = "0xcC9D3B0C4623A9846DDb1fb40D729e771A22a157";
 
 
   let owner1;
@@ -29,18 +27,19 @@ async function main() {
     owner1 = provider.getSigner();
   }
 
-  const steadyBeets2 = "0xecaa1cbd28459d34b766f9195413cb20122fb942000200000000000000000120";
-  const steadyBeetsBPT = new ethers.Contract(addresses.steadyBeets2BPT, ERC20, owner1);
-  const dai = new ethers.Contract(addresses.dai, ERC20);
+  const BPT = new ethers.Contract(addresses.preludeBPT, ERC20, owner1);
   const masterchef = new ethers.Contract(addresses.beetsMasterChef, BeetsMasterChef);
 
-  const amountsIn = [0, ethers.constants.WeiPerEther];
-  const depositAmount = await steadyBeetsBPT.balanceOf(safeAddress);
+  const depositAmount = await BPT.balanceOf(safeAddress);
   let datas = [
-    steadyBeetsBPT.interface.encodeFunctionData("approve", [addresses.beetsMasterChef, depositAmount]),
-    masterchef.interface.encodeFunctionData("deposit", [33, depositAmount, safeAddress]),
+    BPT.interface.encodeFunctionData(
+      "approve", [addresses.beetsMasterChef, depositAmount]
+    ),
+    masterchef.interface.encodeFunctionData(
+      "deposit", [preludeChefPID, depositAmount, safeAddress]
+    ),
   ]
-  let targets = [addresses.steadyBeets2BPT, addresses.beetsMasterChef]
+  let targets = [BPT.address, addresses.beetsMasterChef]
 
   if (debug) {
     const accountToInpersonate = addresses.multisig
@@ -65,7 +64,7 @@ async function main() {
   } else {
     const transactions: MetaTransactionData[] = [
       {
-        to: addresses.steadyBeets2BPT,
+        to: BPT.address,
         data: datas[0],
         value: "0",
         operation: 0,

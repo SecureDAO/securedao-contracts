@@ -9,6 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist"
   },
-  "include": ["./scripts", "./test"],
+  "include": ["./gnosis", "./scripts", "./test"],
   "files": ["./hardhat.config.ts"]
 }
